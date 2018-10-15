@@ -1,0 +1,38 @@
+Network Security 1 FAQ
+======================
+
+Q1: Can I use pcap headers?  
+
+A1: If you intend to only use the layers' structure : Yes.  
+If you use any function from this library or from this header : No.
+---
+
+Q2: [inside the UI] how many layer template should I do? (i.e. application/transport/... recognition and specific layout/display)  
+
+A2: You must support at least:  
+- OSI Layer2: ARP  d
+- OSI Layer3: ICMP, IP (v4 only or v4 AND v6)  
+- OSI Layer4: TVP, UDP  
+- OSI Layer7: HTTP, DNS  
+You are free to do more.  
+If you don't recognize a packet in detail, match the closest.
+---
+
+Q3: Can i create a library and use it fir this purpose?  
+
+A3: Yes, you can. If it's modular it is even better.
+---
+
+Q4: Is the GUI mandatory?  
+
+A4: No, but user interface is mandatory.  
+You are free to have a ncurse UI, or GTK/Qt/..  
+You must provide a way to explore packet's content.
+---
+
+Q5: Do I need to create a documentation?
+
+A5: No. Furthermore, if you intend to generate your documentation: forget it.
+
+---
+Last update: 11/03/2017
