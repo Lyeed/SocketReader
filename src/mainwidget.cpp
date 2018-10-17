@@ -1,15 +1,23 @@
-#include <QtWidgets>
 #include "mainwidget.h"
+#include <list>
 
-MainWidget::MainWidget(QWidget *parent): QWidget(parent) {
-   textBrowser_ = new QTextBrowser();
-
-   QGridLayout *mainLayout = new QGridLayout;
-   mainLayout->addWidget(textBrowser_,1,0);
-   setLayout(mainLayout);
-   setWindowTitle(tr("Choose an interface"));
+MainWidget::MainWidget(QObject *parent): QAbstractTableModel(parent) {
 }
 
-MainWidget::~MainWidget() {
-   delete textBrowser_;
+int MainWidget::rowCount(const QModelIndex &model) const {
+  (void)model;
+  return 10;
+}
+
+int MainWidget::columnCount(const QModelIndex &model) const {
+  (void)model;
+  return 1;
+}
+
+QVariant MainWidget::data(const QModelIndex &index, int role) const {
+  (void)index;
+  if (role == Qt::DisplayRole) {
+    return QString("Packet X");
+  }
+  return QVariant();
 }

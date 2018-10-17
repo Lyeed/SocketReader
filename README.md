@@ -4,14 +4,15 @@
 - [Subject](NS1-Subject.txt)
 - [FAQ](FAQ_NS1.txt)
 
-## Required
+## Requirements
 - Qt `sudo apt-get install build-essential libgl1-mesa-dev`
 
 ## Build project
+`qmake network-analysis.pro`
 `make`
 
 ## Run application
-`./app`
+`./network-analysis`
 
-## Build Debian package
+## Build Debian package (.deb)
 `./package.sh`

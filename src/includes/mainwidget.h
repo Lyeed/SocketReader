@@ -2,18 +2,18 @@
 #define MAINWIDGET_H
 
 #include <QWidget>
+#include <QAbstractTableModel>
+#include <QApplication>
+#include <QTableView>
 
-class QTextBrowser;
-
-class MainWidget : public QWidget {
+class MainWidget : public QAbstractTableModel {
     Q_OBJECT
 
 public:
-    explicit MainWidget(QWidget *parent = 0);
-    ~MainWidget();
-
-private:
-   QTextBrowser* textBrowser_;
+    MainWidget(QObject *parent);
+    int rowCount(const QModelIndex &parent = QModelIndex()) const override ;
+    int columnCount(const QModelIndex &parent = QModelIndex()) const override;
+    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
 };
 
-#endif // MAINWIDGET_H
+#endif /* MAINWIDGET_H */
