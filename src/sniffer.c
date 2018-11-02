@@ -1,4 +1,4 @@
-#include "includes/my_sniffer.h"
+#include "sniffer.h"
 
 int sniffer(raw_packet_t **raw) {
   int saddr_size;
@@ -53,7 +53,7 @@ void fill_ethernet_header(raw_packet_t **raw, unsigned char *buffer) {
   sprintf(eh->src_addr, "%.2X-%.2X-%.2X-%.2X-%.2X-%.2X", eth->h_source[0], eth->h_source[1], eth->h_source[2], eth->h_source[3], eth->h_source[4], eth->h_source[5]);
   eh->dest_addr = malloc(sizeof(char) * 20);
   sprintf(eh->dest_addr, "%.2X-%.2X-%.2X-%.2X-%.2X-%.2X", eth->h_dest[0], eth->h_dest[1], eth->h_dest[2], eth->h_dest[3], eth->h_dest[4], eth->h_dest[5]);
-  eh->proto = (unsigned short)eth->h_proto;  
+  eh->proto = (unsigned short)eth->h_proto;
 
   (*raw)->eth = eh;
 }
@@ -69,7 +69,7 @@ void fill_ip_header(raw_packet_t **raw, unsigned char *buffer) {
 
   memset(&dest, 0, sizeof(dest));
   dest.sin_addr.s_addr = iph->daddr;
-  
+
   ip->version = (unsigned int)iph->version;
   ip->header_len = (unsigned int)(iph->ihl)*4;
   ip->service_type = (unsigned int)(iph->tos);
@@ -128,7 +128,7 @@ void print_raw(raw_packet_t *raw) {
 
     printf("\n");
     raw = raw->next;
-    
+
   }
 }
 

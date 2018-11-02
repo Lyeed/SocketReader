@@ -20,7 +20,6 @@
 #include <sys/types.h>
 #include <pthread.h>
 
-
 typedef struct ethernet_header_s {
   char *src_addr;
   char *dest_addr;
