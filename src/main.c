@@ -1,5 +1,6 @@
 #include "app.h"
+#include "views.h"
 
-int main(void) {
+int main(int argc, char **argv) {
     return appOpen();
 }
