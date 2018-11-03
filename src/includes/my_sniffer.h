@@ -20,6 +20,16 @@
 #include <sys/types.h>
 #include <pthread.h>
 
+typedef enum protocol_e {
+  TCP = 1,
+  UDP = 2,
+  ICMP = 3,
+  ARP = 4,
+  HTTP = 5,
+  DNS = 6,
+  Unknown = 0
+} protocol_t;
+
 typedef struct ethernet_header_s {
   char *src_addr;
   char *dest_addr;
@@ -41,34 +51,34 @@ typedef struct ip_header_s {
 
 //HTTP port=80 == TCP
 typedef struct tcp_header_s {
-  int src_port;
-  int dest_port;
-  int seq_nb;
-  int ack_seq;
-  int len;
-  int urg;
-  int ack;
-  int push;
-  int reset;
-  int sync;
-  int fin;
-  int window;
-  int checksum;
+  unsigned short src_port;
+  unsigned short dest_port;
+  unsigned long seq;
+  unsigned long ack_seq;
+  unsigned int len;
+  unsigned int urg;
+  unsigned int ack;
+  unsigned int push;
+  unsigned int reset;
+  unsigned int sync;
+  unsigned int fin;
+  unsigned short window;
+  unsigned short checksum;
   int urg_ptr;
 } tcp_header_t;
 
 //DNS port=53 == UDP
 typedef struct udp_header_s {
-  int src_port;
-  int dest_port;
-  int len;
-  int checksum;
+  unsigned short src_port;
+  unsigned short dest_port;
+  unsigned short len;
+  unsigned short checksum;
 } udp_header_t;
 
 typedef struct icmp_header_s {
-  int type;
-  int code;
-  int checksum;
+  unsigned int type;
+  unsigned int code;
+  unsigned short checksum;
 } icmp_header_t;
 
 typedef struct info_packet_s {
@@ -86,6 +96,7 @@ typedef struct data_dump_s {
 typedef struct raw_packet_s {
   int num;
   float time;
+  protocol_t proto;
   ethernet_header_t *eth;
   ip_header_t *ip;
   info_packet_t *info;
@@ -95,11 +106,15 @@ typedef struct raw_packet_s {
 } raw_packet_t;
 
 int sniffer(raw_packet_t **);
-void fill_raw_packet(raw_packet_t **raw, unsigned char *, int);
+void fill_raw_packet(raw_packet_t **, unsigned char *, int, int);
 void fill_ethernet_header(raw_packet_t **, unsigned char *);
 void fill_ip_header(raw_packet_t **, unsigned char *);
 void fill_info_header(raw_packet_t **, unsigned char *);
-void fill_data_dump(raw_packet_t **, unsigned char *);
+void fill_info_icmp(raw_packet_t **, unsigned char *);
+void fill_info_tcp(raw_packet_t **, unsigned char *);
+void fill_info_udp(raw_packet_t **, unsigned char *);
+void fill_info_default(raw_packet_t **);
+void fill_data_dump(raw_packet_t **, unsigned char *, int);
 void print_raw(raw_packet_t *);
 void *timer();
 
