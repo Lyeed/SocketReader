@@ -8,15 +8,19 @@
 - GTK-3.0
 
 ## Install depedencies
-```
-sudo apt install libgtk-3-dev
-```
+`sudo apt install libgtk-3-dev`
+
+## Install Debian package
+`sudo dpkg -i network-analysis.deb`
+
+## Uninstall Debian package
+`sudo dpkg -r network-analysis`
 
 ## Build project
 `make`
 
 ## Run application
-`./app`
+`./network-analysis`
 
 ## Build Debian package (.deb)
 `./package.sh`

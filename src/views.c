@@ -1,60 +1,27 @@
 #include "views.h"
 
-const example_t example[] = {
-	{ 60482, "Normal",     "scrollable notebooks and hidden tabs" },
-	{ 60620, "Critical",   "gdk_window_clear_area (gdkwindow-win32.c) is not thread-safe" },
-	{ 50214, "Major",      "Xft support does not clean up correctly" },
-	{ 52877, "Major",      "GtkFileSelection needs a refresh method. " },
-	{ 56070, "Normal",     "Can't click button after setting in sensitive" },
-	{ 56355, "Normal",     "GtkLabel - Not all changes propagate correctly" },
-	{ 50055, "Normal",     "Rework width/height computations for TreeView" },
-	{ 58278, "Normal",     "gtk_dialog_set_response_sensitive() doesn't work" },
-	{ 55767, "Normal",     "Getters for all setters" },
-	{ 56925, "Normal",     "Gtkcalender size" },
-	{ 56221, "Normal",     "Selectable label needs right-click copy menu" },
-	{ 50939, "Normal",     "Add shift clicking to GtkTextView" },
-	{ 6112,  "Enhancement","netscape-like collapsable toolbars" },
-	{ 1,     "Normal",     "First bug :=)" },
-};
-
-static GtkTreeModel *create_model(void) {
+static GtkTreeModel *create_model(raw_packet_t *raw) {
 	GtkTreeIter iter;
 	GtkListStore *store = gtk_list_store_new(NUM_COLUMNS,
-							G_TYPE_UINT,
-							G_TYPE_STRING,
-							G_TYPE_STRING,
-							G_TYPE_UINT,
-							G_TYPE_STRING,
-							G_TYPE_BOOLEAN,
-							G_TYPE_BOOLEAN);
-
-	for (unsigned int i = 0; i < G_N_ELEMENTS(example); i++) {
-		gchar *icon_name;
-		gboolean sensitive;
-
-		if (i == 1 || i == 3) {
-			icon_name = "battery-caution-charging-symbolic";
-		} else {
-			icon_name = NULL;
-		}
-
-		if (i == 3) {
-			sensitive = FALSE;
-		} else {
-			sensitive = TRUE;
-		}
-
-		gtk_list_store_append(store, &iter);
-		gtk_list_store_set(store, &iter,
-						  COLUMN_NUMBER, example[i].number,
-						  COLUMN_SEVERITY, example[i].severity,
-						  COLUMN_DESCRIPTION, example[i].description,
-						  COLUMN_PULSE, 0,
-						  COLUMN_ICON, icon_name,
-						  COLUMN_ACTIVE, FALSE,
-						  COLUMN_SENSITIVE, sensitive,
-						  -1);
-	}
+                                            G_TYPE_UINT,
+                              							G_TYPE_STRING,
+                              							G_TYPE_STRING,
+                                            G_TYPE_UINT,
+                                            G_TYPE_STRING,
+                                            G_TYPE_BOOLEAN,
+                                            G_TYPE_BOOLEAN);
+  while (raw != NULL) {
+    gtk_list_store_append(store, &iter);
+    gtk_list_store_set(store, &iter, COLUMN_NUMBER, raw->num,
+                                      COLUMN_SOURCE, raw->ip->src_ip,
+                                      COLUMN_DEST, raw->ip->dest_ip,
+                                      COLUMN_PULSE, 0,
+                                      COLUMN_ICON, "",
+                                      COLUMN_ACTIVE, FALSE,
+                                      COLUMN_SENSITIVE, FALSE,
+                                      -1);
+    raw = raw->next;
+  }
 
 	return GTK_TREE_MODEL(store);
 }
@@ -63,22 +30,19 @@ static void add_columns(GtkTreeView *treeview) {
 	GtkCellRenderer *renderer;
 	GtkTreeViewColumn *column;
 
-	/* column for bug numbers */
 	renderer = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes("Bug number", renderer, "text", COLUMN_NUMBER, NULL);
+	column = gtk_tree_view_column_new_with_attributes("Id", renderer, "text", COLUMN_NUMBER, NULL);
 	gtk_tree_view_column_set_sort_column_id(column, COLUMN_NUMBER);
 	gtk_tree_view_append_column(treeview, column);
 
-	/* column for severities */
 	renderer = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes("Severity", renderer, "text", COLUMN_SEVERITY, NULL);
-	gtk_tree_view_column_set_sort_column_id(column, COLUMN_SEVERITY);
+	column = gtk_tree_view_column_new_with_attributes("Source", renderer, "text", COLUMN_SOURCE, NULL);
+	gtk_tree_view_column_set_sort_column_id(column, COLUMN_SOURCE);
 	gtk_tree_view_append_column(treeview, column);
 
-	/* column for description */
 	renderer = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes("Description", renderer, "text", COLUMN_DESCRIPTION, NULL);
-	gtk_tree_view_column_set_sort_column_id(column, COLUMN_DESCRIPTION);
+	column = gtk_tree_view_column_new_with_attributes("Destination", renderer, "text", COLUMN_DEST, NULL);
+	gtk_tree_view_column_set_sort_column_id(column, COLUMN_DEST);
 	gtk_tree_view_append_column(treeview, column);
 }
 
@@ -117,16 +81,16 @@ static GtkWidget *create_actions_widget(void) {
 	return frame;
 }
 
-static GtkWidget *create_list_widget(void) {
+static GtkWidget *create_list_widget(raw_packet_t *raw) {
 	GtkWidget *list = gtk_scrolled_window_new(NULL, NULL);
-	GtkTreeModel *model = create_model();
+	GtkTreeModel *model = create_model(raw);
 	GtkWidget *treeview = gtk_tree_view_new_with_model(model);
 
 	gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(list), GTK_SHADOW_ETCHED_IN);
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(list), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
 
-	gtk_tree_view_set_rules_hint(GTK_TREE_VIEW(treeview), TRUE);
-	gtk_tree_view_set_search_column(GTK_TREE_VIEW(treeview), COLUMN_DESCRIPTION);
+	// gtk_tree_view_set_rules_hint(GTK_TREE_VIEW(treeview), TRUE);
+	// gtk_tree_view_set_search_column(GTK_TREE_VIEW(treeview), COLUMN_DESCRIPTION);
 
 	g_object_unref(model);
 	gtk_container_add(GTK_CONTAINER(list), treeview);
@@ -135,7 +99,7 @@ static GtkWidget *create_list_widget(void) {
 	return list;
 }
 
-void rawSocketView(GtkWidget *window) {
+void rawSocketView(GtkWidget *window, raw_packet_t *raw) {
 	gtk_window_set_title(GTK_WINDOW(window), "Sockets reader");
 	gtk_container_set_border_width(GTK_CONTAINER(window), 8);
 
@@ -143,7 +107,7 @@ void rawSocketView(GtkWidget *window) {
 	gtk_container_add(GTK_CONTAINER(window), box);
 
 	gtk_box_pack_start(GTK_BOX(box), create_actions_widget(), FALSE, FALSE, 0);
-	gtk_box_pack_start(GTK_BOX(box), create_list_widget(), TRUE, TRUE, 0);
+	gtk_box_pack_start(GTK_BOX(box), create_list_widget(raw), TRUE, TRUE, 0);
 
 	gtk_window_set_default_size(GTK_WINDOW(window), 512, 512);
 

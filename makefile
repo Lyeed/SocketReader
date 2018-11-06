@@ -1,43 +1,44 @@
-COMPILER=	gcc
+COMPILER=		gcc
 
-RM=			rm -rf
+RM=					rm -rf
 
 CFLAGS=     -Isrc/includes/ \
-			-Wall \
-			-Wextra \
-			-Wundef \
-			-Werror-implicit-function-declaration \
-			-Wshadow \
-			-Wpointer-arith \
-			-Wcast-align \
-			-Wstrict-prototypes \
-			-Wunreachable-code \
-			-Wconversion \
-			-ftrapv
+						-Wall \
+						-Wextra \
+						-Wundef \
+						-Werror-implicit-function-declaration \
+						-Wshadow \
+						-Wpointer-arith \
+						-Wcast-align \
+						-Wstrict-prototypes \
+						-Wunreachable-code \
+						-Wconversion \
+						-ftrapv
 
-CFLAGS+=	`pkg-config --cflags gtk+-3.0`
+CFLAGS+=		`pkg-config --cflags gtk+-3.0`
 
 GTK_LDFLAGS=`pkg-config --libs gtk+-3.0`
 
-SRCS= 		src/main.c \
-			src/app.c \
-			src/views.c
+SRCS= 			src/main.c \
+						src/app.c \
+						src/views.c \
+						src/my_sniffer.c
 
-OBJS=		$(SRCS:.c=.o)
+OBJS=				$(SRCS:.c=.o)
 
-NAME= 		app
+NAME= 			network-analysis
 
-all: 		$(NAME)
+all: 				$(NAME)
 
-$(NAME): 	$(OBJS)
-			$(COMPILER) $(CFLAGS) $(SRCS) -o $(NAME) $(GTK_LDFLAGS)
+$(NAME): 		$(OBJS)
+						$(COMPILER) $(CFLAGS) $(SRCS) -o $(NAME) $(GTK_LDFLAGS)
 
 clean:
-			$(RM) $(OBJS)
+						$(RM) $(OBJS)
 
-fclean: 	clean
-			$(RM) $(NAME)
+fclean: 		clean
+						$(RM) $(NAME)
 
-re: 		fclean all
+re: 				fclean all
 
-.PHONY: 	all re clean fclean
+.PHONY: 		all re clean fclean

@@ -1,25 +1,20 @@
 #include <gtk/gtk.h>
+#include "my_sniffer.h"
 
 #ifndef VIEWS_H_
 #define VIEWS_H_
 
-typedef struct {
-	const guint number;
-	const gchar *severity;
-	const gchar *description;
-} example_t;
-
 enum {
 	COLUMN_NUMBER,
-	COLUMN_SEVERITY,
-	COLUMN_DESCRIPTION,
-	COLUMN_PULSE,
-	COLUMN_ICON,
-	COLUMN_ACTIVE,
-	COLUMN_SENSITIVE,
-	NUM_COLUMNS
+	COLUMN_SOURCE,
+	COLUMN_DEST,
+  COLUMN_PULSE,
+  COLUMN_ICON,
+  COLUMN_ACTIVE,
+  COLUMN_SENSITIVE,
+  NUM_COLUMNS
 };
 
-void rawSocketView(GtkWidget *);
+void rawSocketView(GtkWidget *, raw_packet_t *);
 
 #endif /* VIEWS_H_ */
