@@ -116,6 +116,7 @@ void fill_info_udp(raw_packet_t **, unsigned char *);
 void fill_info_default(raw_packet_t **);
 void fill_data_dump(raw_packet_t **, unsigned char *, int);
 void print_raw(raw_packet_t *);
-void *timer();
+void *timer(void);
+void import_pcapfile(char *, raw_packet_t **);
 
 #endif

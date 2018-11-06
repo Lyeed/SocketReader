@@ -1,4 +1,4 @@
-#include "my_sniffer.h"
+#include "includes/my_sniffer.h"
 
 int sniffer(raw_packet_t **raw) {
   int saddr_size;
@@ -15,7 +15,7 @@ int sniffer(raw_packet_t **raw) {
 
   while (num != 10) {
     saddr_size = sizeof(saddr);
-    data_size = recvfrom(sock_raw, buffer, 65536, 0, &saddr, (socklen_t*)&saddr_size);
+    data_size = (int)recvfrom(sock_raw, buffer, 65536, 0, &saddr, (socklen_t*)&saddr_size);
     if (data_size < 0)
       printf("recvfrom failed\n");
     fill_raw_packet(raw, buffer, data_size, num++);
@@ -25,6 +25,10 @@ int sniffer(raw_packet_t **raw) {
 }
 
 void fill_raw_packet(raw_packet_t **raw, unsigned char *buffer, int size, int num) {
+  struct ethhdr *eth = (struct ethhdr *)buffer;
+  if (ntohs(eth->h_proto) != ETH_P_IP)
+	return;
+
   raw_packet_t *packet = malloc(sizeof(raw_packet_t));
   raw_packet_t *tmp = (*raw);
 
@@ -188,9 +192,9 @@ void fill_info_default(raw_packet_t **raw) {
 void fill_data_dump(raw_packet_t **raw, unsigned char *buffer, int size) {
   data_dump_t *dump = malloc(sizeof(data_dump_t));
   int i = 0;
-  char *hexa = malloc(sizeof(char) * (size+1)*2);
+  char *hexa = malloc(sizeof(char) * (long unsigned int)(size+1)*2);
   char *tmp = malloc(sizeof(char) * 5);
-  char *ascii = malloc(sizeof(char) * (size+1)*2);
+  char *ascii = malloc(sizeof(char) * (long unsigned int)(size+1)*2);
 
   for (i = 0; i < size; i++) {
     sprintf(tmp, "%02X", (unsigned int)buffer[i]);
@@ -199,7 +203,7 @@ void fill_data_dump(raw_packet_t **raw, unsigned char *buffer, int size) {
   
   for (i = 0; i < size; i++) {    
     if (buffer[i] >= 32 && buffer[i] <= 128)
-      ascii[i] = buffer[i];
+      ascii[i] = (char)buffer[i];
     else
       ascii[i] = '.';
   }
@@ -215,7 +219,7 @@ void *timer() {
   float timer = 0;
 
   while (1) {
-    timer += 0.001;
+    timer += (float)0.001;
     usleep(1);
     printf("%f\n", timer);
   }
@@ -271,18 +275,16 @@ void print_raw(raw_packet_t *raw) {
     printf("dest addr: %s\n", raw->ip->dest_ip);
 
     if (raw->info->tcp != NULL) {
-      printf("%d\n", raw->info->tcp->src_port);
-      printf("%d\n", raw->info->tcp->dest_port);
-      printf("%d\n", raw->info->tcp->len);
-      printf("%d\n", raw->info->tcp->window);
+      printf("src p: %d\n", raw->info->tcp->src_port);
+      printf("dest p: %d\n", raw->info->tcp->dest_port);
+      printf("window: %d\n", raw->info->tcp->window);
     }
     if (raw->info->udp != NULL) {
-      printf("%d\n", raw->info->udp->src_port);
-      printf("%d\n", raw->info->udp->dest_port);
-      printf("%d\n", raw->info->udp->len);      
+      printf("src p: %d\n", raw->info->udp->src_port);
+      printf("dest p: %d\n", raw->info->udp->dest_port);
     }
     if (raw->info->icmp != NULL) {
-      printf("%d\n", raw->info->icmp->code);
+      printf("code: %d\n", raw->info->icmp->code);
     }
 
     printf("%s\n", raw->dump->hexa);
@@ -293,10 +295,63 @@ void print_raw(raw_packet_t *raw) {
   }
 }
 
-int main() {
+void import_pcapfile(char *pcapfile, raw_packet_t **raw) {
+	FILE *f = fopen(pcapfile, "r");
+	unsigned char c;
+	int i = 0;
+	int j = 0;
+	int stop = 0;
+	int pow = 1;
+	int size = 0;
+
+	while (i < 24 && !feof(f)) { // GLOBAL HEADER
+		c = fgetc(f);
+		i++;
+	}
+
+	while (!feof(f)) {
+		stop = i + 8;
+		while (i < stop && !feof(f)) { // PACKET HEADER TIMER
+			c = fgetc(f);
+			i++;
+		}
+
+		stop = i + 4;
+		while (i < stop && !feof(f)) { // PACKET HEADER SIZE
+			c = fgetc(f);
+			size += c * pow;
+			pow = pow * 256;
+			i++;
+		}
+		printf("size=%d\n", size);
+
+		stop = i + 4;
+		while (i < stop && !feof(f)) { // PACKET HEADER SIZE 2
+			c = fgetc(f);
+			i++;
+		}
+
+		stop = i + size;
+		unsigned char *buffer = malloc(sizeof(char) * (stop-i+1));
+		while (i < stop && !feof(f)) { // READ PACKET
+			c = fgetc(f);
+			buffer[j++] = c;
+			i++;
+		}
+		fill_raw_packet(raw, buffer, (stop-i), 0);
+		j = 0;
+		size = 0;
+		pow = 1;
+	}
+
+	fclose(f);
+}
+
+int main(int ac, char **av) {
   raw_packet_t *raw = NULL;
 
-  sniffer(&raw);
+  import_pcapfile(av[1], &raw);
   print_raw(raw);
+
   return 0;
 }
