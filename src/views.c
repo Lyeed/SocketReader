@@ -1,15 +1,8 @@
 #include "views.h"
 
-static GtkTreeModel *create_model(raw_packet_t *raw) {
-	GtkTreeIter iter;
-	GtkListStore *store = gtk_list_store_new(NUM_COLUMNS,
-                                            G_TYPE_UINT,
-                              							G_TYPE_STRING,
-                              							G_TYPE_STRING,
-                                            G_TYPE_UINT,
-                                            G_TYPE_STRING,
-                                            G_TYPE_BOOLEAN,
-                                            G_TYPE_BOOLEAN);
+static void *fill_list(raw_packet_t *raw, GtkListStore *store) {
+  GtkTreeIter iter;
+
   while (raw != NULL) {
     gtk_list_store_append(store, &iter);
     gtk_list_store_set(store, &iter, COLUMN_NUMBER, raw->num,
@@ -22,8 +15,11 @@ static GtkTreeModel *create_model(raw_packet_t *raw) {
                                       -1);
     raw = raw->next;
   }
+  return NULL;
+}
 
-	return GTK_TREE_MODEL(store);
+static GtkListStore *create_model(void) {
+	return gtk_list_store_new(NUM_COLUMNS, G_TYPE_UINT, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_UINT, G_TYPE_STRING, G_TYPE_BOOLEAN, G_TYPE_BOOLEAN);
 }
 
 static void add_columns(GtkTreeView *treeview) {
@@ -83,8 +79,9 @@ static GtkWidget *create_actions_widget(void) {
 
 static GtkWidget *create_list_widget(raw_packet_t *raw) {
 	GtkWidget *list = gtk_scrolled_window_new(NULL, NULL);
-	GtkTreeModel *model = create_model(raw);
-	GtkWidget *treeview = gtk_tree_view_new_with_model(model);
+  GtkListStore *store = create_model();
+  GtkTreeModel *model = GTK_TREE_MODEL(store);
+  GtkWidget *treeview = gtk_tree_view_new_with_model(model);
 
 	gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(list), GTK_SHADOW_ETCHED_IN);
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(list), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
@@ -96,6 +93,9 @@ static GtkWidget *create_list_widget(raw_packet_t *raw) {
 	gtk_container_add(GTK_CONTAINER(list), treeview);
 
 	add_columns(GTK_TREE_VIEW(treeview));
+
+  fill_list(raw, store);
+  print_raw(raw);// TEMP
 	return list;
 }
 
@@ -109,9 +109,6 @@ void rawSocketView(GtkWidget *window, raw_packet_t *raw) {
 	gtk_box_pack_start(GTK_BOX(box), create_actions_widget(), FALSE, FALSE, 0);
 	gtk_box_pack_start(GTK_BOX(box), create_list_widget(raw), TRUE, TRUE, 0);
 
-	gtk_window_set_default_size(GTK_WINDOW(window), 512, 512);
-
-	gtk_widget_show(window);
 	gtk_widget_show_all(window);
 	gtk_main();
 }

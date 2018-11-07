@@ -1,5 +1,5 @@
 #include <gtk/gtk.h>
-#include "my_sniffer.h"
+#include "sniffer.h"
 
 #ifndef VIEWS_H_
 #define VIEWS_H_

@@ -15,14 +15,14 @@ CFLAGS=     -Isrc/includes/ \
 						-Wconversion \
 						-ftrapv
 
-CFLAGS+=		`pkg-config --cflags gtk+-3.0`
+CFLAGS+=		`pkg-config --cflags gtk+-3.0` -lpthread
 
 GTK_LDFLAGS=`pkg-config --libs gtk+-3.0`
 
 SRCS= 			src/main.c \
 						src/app.c \
 						src/views.c \
-						src/my_sniffer.c
+						src/sniffer.c
 
 OBJS=				$(SRCS:.c=.o)
 

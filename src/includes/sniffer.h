@@ -1,5 +1,5 @@
-#ifndef my_sniffer_h
-#define my_sniffer_h
+#ifndef sniffer_h
+#define sniffer_h
 
 #include <unistd.h>
 #include <errno.h>
@@ -92,7 +92,6 @@ typedef struct data_dump_s {
   char *ascii;
 } data_dump_t;
 
-
 typedef struct raw_packet_s {
   int num;
   float time;
@@ -105,7 +104,7 @@ typedef struct raw_packet_s {
   struct raw_packet_s *prev;
 } raw_packet_t;
 
-int sniffer(raw_packet_t **);
+void *sniffer(void *);
 void fill_raw_packet(raw_packet_t **, unsigned char *, int, int);
 void fill_ethernet_header(raw_packet_t **, unsigned char *);
 void fill_ip_header(raw_packet_t **, unsigned char *);

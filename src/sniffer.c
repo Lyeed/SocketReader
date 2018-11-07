@@ -1,68 +1,4 @@
-#include "includes/my_sniffer.h"
-
-int sniffer(raw_packet_t **raw) {
-  int saddr_size;
-  int data_size;
-  int num = 0;
-  struct sockaddr saddr;
-  unsigned char *buffer = (unsigned char *)malloc(65536);
-  int sock_raw = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
-
-  if (sock_raw < 0) {
-    printf("need admin right\n");
-    return -1;
-  }
-
-  while (num != 10) {
-    saddr_size = sizeof(saddr);
-    data_size = (int)recvfrom(sock_raw, buffer, 65536, 0, &saddr, (socklen_t*)&saddr_size);
-    if (data_size < 0)
-      printf("recvfrom failed\n");
-    fill_raw_packet(raw, buffer, data_size, num++);
-  }
-  close(sock_raw);
-  return 0;
-}
-
-void fill_raw_packet(raw_packet_t **raw, unsigned char *buffer, int size, int num) {
-  struct ethhdr *eth = (struct ethhdr *)buffer;
-  if (ntohs(eth->h_proto) != ETH_P_IP)
-	return;
-
-  raw_packet_t *packet = malloc(sizeof(raw_packet_t));
-  raw_packet_t *tmp = (*raw);
-
-  packet->num = num;
-  packet->time = 0;
-  packet->proto = Unknown;
-  fill_ethernet_header(&packet, buffer);
-  fill_ip_header(&packet, buffer);
-  fill_info_header(&packet, buffer);
-  fill_data_dump(&packet, buffer, size);
-  packet->next = NULL;
-  if (tmp == NULL) {
-    (*raw) = packet;
-    return ;
-  }
-  while (tmp->next != NULL)
-    tmp = tmp->next;
-  packet->prev = tmp;
-  tmp->next = packet;
-}
-
-void fill_ethernet_header(raw_packet_t **raw, unsigned char *buffer) {
-  struct ethhdr *eth = (struct ethhdr *)buffer;
-  ethernet_header_t *eh = malloc(sizeof(ethernet_header_t));
-
-  eh->src_addr = malloc(sizeof(char) * 20);
-  sprintf(eh->src_addr, "%.2X-%.2X-%.2X-%.2X-%.2X-%.2X", eth->h_source[0], eth->h_source[1], eth->h_source[2], eth->h_source[3], eth->h_source[4], eth->h_source[5]);
-  eh->dest_addr = malloc(sizeof(char) * 20);
-  sprintf(eh->dest_addr, "%.2X-%.2X-%.2X-%.2X-%.2X-%.2X", eth->h_dest[0], eth->h_dest[1], eth->h_dest[2], eth->h_dest[3], eth->h_dest[4], eth->h_dest[5]);
-  eh->proto = ntohs(eth->h_proto);
-  if (eh->proto == ETH_P_ARP)
-    printf("ARP DETECTED !! :oooo\n");
-  (*raw)->eth = eh;
-}
+#include "sniffer.h"
 
 void fill_ip_header(raw_packet_t **raw, unsigned char *buffer) {
   struct iphdr *iph = (struct iphdr *)(buffer + sizeof(struct ethhdr));
@@ -75,7 +11,7 @@ void fill_ip_header(raw_packet_t **raw, unsigned char *buffer) {
 
   memset(&dest, 0, sizeof(dest));
   dest.sin_addr.s_addr = iph->daddr;
-  
+
   ip->version = (unsigned int)iph->version;
   ip->header_len = (unsigned int)(iph->ihl*4);
   ip->service_type = (unsigned int)(iph->tos);
@@ -88,27 +24,6 @@ void fill_ip_header(raw_packet_t **raw, unsigned char *buffer) {
   ip->dest_ip = strdup(inet_ntoa(dest.sin_addr));
 
   (*raw)->ip = ip;
-}
-
-void fill_info_header(raw_packet_t **raw, unsigned char *buffer) {
-  switch ((*raw)->ip->proto) {
-
-  case 1: //ICMP
-    fill_info_icmp(raw, buffer);
-    break;
-
-  case 6: //TCP HTTP
-    fill_info_tcp(raw, buffer);
-    break;
-    
-  case 17: //UDP DNS
-    fill_info_udp(raw, buffer);
-    break;
-
-  default:
-    fill_info_default(raw);
-    break;
-  }
 }
 
 void fill_info_icmp(raw_packet_t **raw, unsigned char *buffer) {
@@ -124,7 +39,7 @@ void fill_info_icmp(raw_packet_t **raw, unsigned char *buffer) {
   inf->tcp = NULL;
   inf->udp = NULL;
   inf->icmp = icmp;
-  
+
   (*raw)->info = inf;
   (*raw)->proto = ICMP;
 }
@@ -155,7 +70,7 @@ void fill_info_tcp(raw_packet_t **raw, unsigned char *buffer) {
   inf->icmp = NULL;
 
   (*raw)->info = inf;
-  
+
   (*raw)->proto = (tcp->src_port == 80 || tcp->dest_port == 80) ? HTTP : TCP;
 }
 
@@ -200,8 +115,8 @@ void fill_data_dump(raw_packet_t **raw, unsigned char *buffer, int size) {
     sprintf(tmp, "%02X", (unsigned int)buffer[i]);
     strcat(hexa, tmp);
   }
-  
-  for (i = 0; i < size; i++) {    
+
+  for (i = 0; i < size; i++) {
     if (buffer[i] >= 32 && buffer[i] <= 128)
       ascii[i] = (char)buffer[i];
     else
@@ -214,10 +129,95 @@ void fill_data_dump(raw_packet_t **raw, unsigned char *buffer, int size) {
   (*raw)->dump = dump;
 }
 
+void fill_ethernet_header(raw_packet_t **raw, unsigned char *buffer) {
+  struct ethhdr *eth = (struct ethhdr *)buffer;
+  ethernet_header_t *eh = malloc(sizeof(ethernet_header_t));
+
+  eh->src_addr = malloc(sizeof(char) * 20);
+  sprintf(eh->src_addr, "%.2X-%.2X-%.2X-%.2X-%.2X-%.2X", eth->h_source[0], eth->h_source[1], eth->h_source[2], eth->h_source[3], eth->h_source[4], eth->h_source[5]);
+  eh->dest_addr = malloc(sizeof(char) * 20);
+  sprintf(eh->dest_addr, "%.2X-%.2X-%.2X-%.2X-%.2X-%.2X", eth->h_dest[0], eth->h_dest[1], eth->h_dest[2], eth->h_dest[3], eth->h_dest[4], eth->h_dest[5]);
+  eh->proto = ntohs(eth->h_proto);
+  if (eh->proto == ETH_P_ARP)
+    printf("ARP DETECTED !! :oooo\n");
+  (*raw)->eth = eh;
+}
+
+void fill_info_header(raw_packet_t **raw, unsigned char *buffer) {
+  switch ((*raw)->ip->proto) {
+
+  case 1: //ICMP
+    fill_info_icmp(raw, buffer);
+    break;
+
+  case 6: //TCP HTTP
+    fill_info_tcp(raw, buffer);
+    break;
+
+  case 17: //UDP DNS
+    fill_info_udp(raw, buffer);
+    break;
+
+  default:
+    fill_info_default(raw);
+    break;
+  }
+}
+
+void fill_raw_packet(raw_packet_t **raw, unsigned char *buffer, int size, int num) {
+  struct ethhdr *eth = (struct ethhdr *)buffer;
+  if (ntohs(eth->h_proto) != ETH_P_IP)
+  return;
+
+  raw_packet_t *packet = malloc(sizeof(raw_packet_t));
+  raw_packet_t *tmp = (*raw);
+
+  packet->num = num;
+  packet->time = 0;
+  packet->proto = Unknown;
+  fill_ethernet_header(&packet, buffer);
+  fill_ip_header(&packet, buffer);
+  fill_info_header(&packet, buffer);
+  fill_data_dump(&packet, buffer, size);
+  packet->next = NULL;
+  if (tmp == NULL) {
+    (*raw) = packet;
+    return ;
+  }
+  while (tmp->next != NULL)
+    tmp = tmp->next;
+  packet->prev = tmp;
+  tmp->next = packet;
+}
+
+void *sniffer(void *data) {
+  raw_packet_t **raw = data;
+  int saddr_size;
+  int data_size;
+  int num = 0;
+  struct sockaddr saddr;
+  unsigned char *buffer = (unsigned char *)malloc(65536);
+  int sock_raw = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
+
+  if (sock_raw < 0) {
+    printf("need admin right\n");
+    exit(0);
+  }
+
+  while (num != 10) {
+    saddr_size = sizeof(saddr);
+    data_size = (int)recvfrom(sock_raw, buffer, 65536, 0, &saddr, (socklen_t*)&saddr_size);
+    if (data_size < 0)
+      printf("recvfrom failed\n");
+    fill_raw_packet(raw, buffer, data_size, num++);
+  }
+  print_raw(*raw);
+  close(sock_raw);
+  return NULL;
+}
 
 void *timer() {
   float timer = 0;
-
   while (1) {
     timer += (float)0.001;
     usleep(1);
@@ -257,7 +257,7 @@ void print_raw(raw_packet_t *raw) {
     printf("##############################\n");
     printf("Number: %d\n", raw->num);
     print_protocol(raw->proto);
-    
+
     /*printf("\nPACKET ETHERNET HEADER\n");
     printf("%s\n", raw->eth->src_addr);
     printf("%s\n", raw->eth->dest_addr);
@@ -288,7 +288,7 @@ void print_raw(raw_packet_t *raw) {
     }
 
     printf("%s\n", raw->dump->hexa);
-    printf("%s\n", raw->dump->ascii);    
+    printf("%s\n", raw->dump->ascii);
     printf("##############################\n");
     printf("\n");
     raw = raw->next;
@@ -297,7 +297,7 @@ void print_raw(raw_packet_t *raw) {
 
 void import_pcapfile(char *pcapfile, raw_packet_t **raw) {
 	FILE *f = fopen(pcapfile, "r");
-	unsigned char c;
+	int c;
 	int i = 0;
 	int j = 0;
 	int stop = 0;
@@ -332,10 +332,10 @@ void import_pcapfile(char *pcapfile, raw_packet_t **raw) {
 		}
 
 		stop = i + size;
-		unsigned char *buffer = malloc(sizeof(char) * (stop-i+1));
+		unsigned char *buffer = malloc(sizeof(char) * (long unsigned int)(stop-i+1));
 		while (i < stop && !feof(f)) { // READ PACKET
 			c = fgetc(f);
-			buffer[j++] = c;
+			buffer[j++] = (unsigned char)c;
 			i++;
 		}
 		fill_raw_packet(raw, buffer, (stop-i), 0);
@@ -347,11 +347,11 @@ void import_pcapfile(char *pcapfile, raw_packet_t **raw) {
 	fclose(f);
 }
 
-int main(int ac, char **av) {
-  raw_packet_t *raw = NULL;
+// int main(int ac, char **av) {
+//   raw_packet_t *raw = NULL;
 
-  import_pcapfile(av[1], &raw);
-  print_raw(raw);
+//   import_pcapfile(av[1], &raw);
+//   print_raw(raw);
 
-  return 0;
-}
+//   return 0;
+// }
