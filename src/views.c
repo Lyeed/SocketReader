@@ -31,7 +31,7 @@ static void *fill_list(void *data) {
 }
 
 static GtkListStore *create_model(void) {
-	return gtk_list_store_new(NUM_COLUMNS, G_TYPE_UINT, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_UINT, G_TYPE_STRING, G_TYPE_BOOLEAN, G_TYPE_BOOLEAN);
+	return gtk_list_store_new(NUM_COLUMNS, G_TYPE_UFLOAT, G_TYPE_UINT, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_UINT, G_TYPE_STRING, G_TYPE_BOOLEAN, G_TYPE_BOOLEAN);
 }
 
 static void add_columns(GtkTreeView *treeview) {
@@ -39,9 +39,14 @@ static void add_columns(GtkTreeView *treeview) {
 	GtkTreeViewColumn *column;
 
 	renderer = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes("Id", renderer, "text", COLUMN_NUMBER, NULL);
+	column = gtk_tree_view_column_new_with_attributes("No.", renderer, "text", COLUMN_NUMBER, NULL);
 	gtk_tree_view_column_set_sort_column_id(column, COLUMN_NUMBER);
 	gtk_tree_view_append_column(treeview, column);
+
+  renderer = gtk_cell_renderer_text_new();
+  column = gtk_tree_view_column_new_with_attributes("Time", renderer, "text", COLUMN_TIME, NULL);
+  gtk_tree_view_column_set_sort_column_id(column, COLUMN_TIME);
+  gtk_tree_view_append_column(treeview, column);
 
 	renderer = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes("Source", renderer, "text", COLUMN_SOURCE, NULL);
@@ -52,6 +57,11 @@ static void add_columns(GtkTreeView *treeview) {
 	column = gtk_tree_view_column_new_with_attributes("Destination", renderer, "text", COLUMN_DEST, NULL);
 	gtk_tree_view_column_set_sort_column_id(column, COLUMN_DEST);
 	gtk_tree_view_append_column(treeview, column);
+
+  renderer = gtk_cell_renderer_text_new();
+  column = gtk_tree_view_column_new_with_attributes("Protocol", renderer, "text", COLUMN_PROTOCOL, NULL);
+  gtk_tree_view_column_set_sort_column_id(column, COLUMN_PROTOCOL);
+  gtk_tree_view_append_column(treeview, column);
 }
 
 static void callback(GtkWidget *widget, gpointer data) {
