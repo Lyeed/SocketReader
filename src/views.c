@@ -29,10 +29,6 @@ static void *fill_list(void *data) {
   return NULL;
 }
 
-static GtkListStore *create_model(void) {
-  return gtk_list_store_new(NUM_COLUMNS, G_TYPE_UINT, G_TYPE_FLOAT, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_UINT, G_TYPE_UINT, G_TYPE_STRING, G_TYPE_BOOLEAN, G_TYPE_BOOLEAN);
-}
-
 static void add_columns(GtkTreeView *treeview) {
   GtkCellRenderer *renderer;
   GtkTreeViewColumn *column;
@@ -101,7 +97,17 @@ static GtkWidget *create_actions_widget(raw_packet_t **raw) {
 
 static GtkWidget *create_list_widget(raw_packet_t **raw) {
   GtkWidget *list = gtk_scrolled_window_new(NULL, NULL);
-  GtkListStore *store = create_model();
+  GtkListStore *store = gtk_list_store_new(NUM_COLUMNS,
+                                           G_TYPE_UINT,
+                                           G_TYPE_FLOAT,
+                                           G_TYPE_STRING,
+                                           G_TYPE_STRING,
+                                           G_TYPE_STRING,
+                                           G_TYPE_UINT,
+                                           G_TYPE_UINT,
+                                           G_TYPE_STRING,
+                                           G_TYPE_BOOLEAN,
+                                           G_TYPE_BOOLEAN);
   GtkTreeModel *model = GTK_TREE_MODEL(store);
   GtkWidget *treeview = gtk_tree_view_new_with_model(model);
   pthread_t thread;
@@ -118,6 +124,16 @@ static GtkWidget *create_list_widget(raw_packet_t **raw) {
   return list;
 }
 
+static GtkWidget *create_text_widget(void) {
+  GtkWidget *view = gtk_text_view_new();
+  GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(view));
+
+  gtk_text_buffer_set_text(buffer, "Hello, this is some text", -1);
+  gtk_text_view_set_editable(GTK_TEXT_VIEW(view), FALSE);
+  gtk_text_view_set_cursor_visible(GTK_TEXT_VIEW(view), FALSE);
+  return view;
+}
+
 void rawSocketView(GtkWidget *window, raw_packet_t **raw) {
   g_print("rawSocketView()\n");
 
@@ -129,6 +145,7 @@ void rawSocketView(GtkWidget *window, raw_packet_t **raw) {
 
   gtk_box_pack_start(GTK_BOX(box), create_actions_widget(raw), FALSE, FALSE, 0);
   gtk_box_pack_start(GTK_BOX(box), create_list_widget(raw), TRUE, TRUE, 0);
+  gtk_box_pack_start(GTK_BOX(box), create_text_widget(), TRUE, TRUE, 0);
 
   gtk_widget_show_all(window);
 }
