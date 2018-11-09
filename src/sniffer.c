@@ -167,7 +167,7 @@ void fill_info_header(raw_packet_t **raw, unsigned char *buffer) {
 void fill_raw_packet(raw_packet_t **raw, unsigned char *buffer, int size, int num) {
   struct ethhdr *eth = (struct ethhdr *)buffer;
   if (ntohs(eth->h_proto) != ETH_P_IP)
-  return;
+    return;
 
   raw_packet_t *packet = malloc(sizeof(raw_packet_t));
   raw_packet_t *tmp = (*raw);
@@ -184,6 +184,7 @@ void fill_raw_packet(raw_packet_t **raw, unsigned char *buffer, int size, int nu
     (*raw) = packet;
     return ;
   }
+  print_raw(packet);
   while (tmp->next != NULL)
     tmp = tmp->next;
   packet->prev = tmp;
@@ -194,26 +195,28 @@ void *sniffer(void *data) {
   raw_packet_t **raw = data;
   int saddr_size;
   int data_size;
-  int num = 0;
+  int num = 1;
   struct sockaddr saddr;
   unsigned char *buffer = (unsigned char *)malloc(65536);
   int sock_raw = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
 
-  if (sock_raw < 0) {
-    printf("need admin right\n");
+  if (sock_raw == -1) {
+    perror("Socket");
     exit(0);
   }
 
-  while (num != 10) {
+  puts("Starting packets analyzer\n");
+  while (1) {
     saddr_size = sizeof(saddr);
     data_size = (int)recvfrom(sock_raw, buffer, 65536, 0, &saddr, (socklen_t*)&saddr_size);
-    if (data_size < 0)
-      printf("recvfrom failed\n");
-    fill_raw_packet(raw, buffer, data_size, num++);
+    if (data_size < 0) {
+      puts("recvfrom failed\n");
+    } else {
+      fill_raw_packet(raw, buffer, data_size, ++num);
+    }
   }
-  print_raw(*raw);
+
   close(sock_raw);
-  return NULL;
 }
 
 void *timer() {
@@ -253,46 +256,43 @@ void print_protocol(int proto) {
 }
 
 void print_raw(raw_packet_t *raw) {
-  while (raw != NULL) {
-    printf("##############################\n");
-    printf("Number: %d\n", raw->num);
-    print_protocol(raw->proto);
+  printf("##############################\n");
+  printf("Number: %d\n", raw->num);
+  print_protocol(raw->proto);
 
-    /*printf("\nPACKET ETHERNET HEADER\n");
-    printf("%s\n", raw->eth->src_addr);
-    printf("%s\n", raw->eth->dest_addr);
-    printf("%u\n", raw->eth->proto);*/
+  /*printf("\nPACKET ETHERNET HEADER\n");
+  printf("%s\n", raw->eth->src_addr);
+  printf("%s\n", raw->eth->dest_addr);
+  printf("%u\n", raw->eth->proto);*/
 
-    /*printf("%d\n", raw->ip->version);
-    printf("%d\n", raw->ip->header_len);
-    printf("%d\n", raw->ip->service_type);
-    printf("%d\n", raw->ip->total_len);
-    printf("%d\n", raw->ip->id);
-    printf("%d\n", raw->ip->ttl);
-    printf("%d\n", raw->ip->proto);
-    printf("%d\n", raw->ip->checksum);*/
-    printf("src addr: %s\n", raw->ip->src_ip);
-    printf("dest addr: %s\n", raw->ip->dest_ip);
+  /*printf("%d\n", raw->ip->version);
+  printf("%d\n", raw->ip->header_len);
+  printf("%d\n", raw->ip->service_type);
+  printf("%d\n", raw->ip->total_len);
+  printf("%d\n", raw->ip->id);
+  printf("%d\n", raw->ip->ttl);
+  printf("%d\n", raw->ip->proto);
+  printf("%d\n", raw->ip->checksum);*/
+  printf("src addr: %s\n", raw->ip->src_ip);
+  printf("dest addr: %s\n", raw->ip->dest_ip);
 
-    if (raw->info->tcp != NULL) {
-      printf("src p: %d\n", raw->info->tcp->src_port);
-      printf("dest p: %d\n", raw->info->tcp->dest_port);
-      printf("window: %d\n", raw->info->tcp->window);
-    }
-    if (raw->info->udp != NULL) {
-      printf("src p: %d\n", raw->info->udp->src_port);
-      printf("dest p: %d\n", raw->info->udp->dest_port);
-    }
-    if (raw->info->icmp != NULL) {
-      printf("code: %d\n", raw->info->icmp->code);
-    }
-
-    printf("%s\n", raw->dump->hexa);
-    printf("%s\n", raw->dump->ascii);
-    printf("##############################\n");
-    printf("\n");
-    raw = raw->next;
+  if (raw->info->tcp != NULL) {
+    printf("src p: %d\n", raw->info->tcp->src_port);
+    printf("dest p: %d\n", raw->info->tcp->dest_port);
+    printf("window: %d\n", raw->info->tcp->window);
   }
+  if (raw->info->udp != NULL) {
+    printf("src p: %d\n", raw->info->udp->src_port);
+    printf("dest p: %d\n", raw->info->udp->dest_port);
+  }
+  if (raw->info->icmp != NULL) {
+    printf("code: %d\n", raw->info->icmp->code);
+  }
+
+  printf("%s\n", raw->dump->hexa);
+  printf("%s\n", raw->dump->ascii);
+  printf("##############################\n");
+  printf("\n");
 }
 
 void import_pcapfile(char *pcapfile, raw_packet_t **raw) {

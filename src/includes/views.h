@@ -15,6 +15,6 @@ enum {
   NUM_COLUMNS
 };
 
-void rawSocketView(GtkWidget *, raw_packet_t *);
+void rawSocketView(GtkWidget *, raw_packet_t **);
 
 #endif /* VIEWS_H_ */
