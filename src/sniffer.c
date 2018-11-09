@@ -228,37 +228,38 @@ void *timer() {
   }
 }
 
-void print_protocol(int proto) {
-  printf("protocol: ");
+char *getProtocol(const int proto) {
+  char *protocol = NULL;
   switch (proto) {
-  case 0:
-    printf("Unknown\n");
-    break;
-  case 1:
-    printf("TCP\n");
-    break;
-  case 2:
-    printf("UDP\n");
-    break;
-  case 3:
-    printf("ICMP\n");
-    break;
-  case 4:
-    printf("ARP\n");
-    break;
-  case 5:
-    printf("HTTP\n");
-    break;
-  case 6:
-    printf("DNS\n");
-    break;
+    case 0:
+      protocol = strdup("Unknown");
+      break;
+    case 1:
+      protocol = strdup("TCP");
+      break;
+    case 2:
+      protocol = strdup("UDP");
+      break;
+    case 3:
+      protocol = strdup("ICMP");
+      break;
+    case 4:
+      protocol = strdup("ARP");
+      break;
+    case 5:
+      protocol = strdup("HTTP");
+      break;
+    case 6:
+      protocol = strdup("DNS");
+      break;
   };
+  return protocol;
 }
 
 void print_raw(raw_packet_t *raw) {
   printf("##############################\n");
   printf("Number: %d\n", raw->num);
-  print_protocol(raw->proto);
+  printf("protocol: %s\n", getProtocol(raw->proto));
 
   /*printf("\nPACKET ETHERNET HEADER\n");
   printf("%s\n", raw->eth->src_addr);

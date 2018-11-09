@@ -24,9 +24,7 @@ static int appDestroy(GtkWidget *window) {
 
 static void appRun(GtkWidget *window) {
   raw_packet_t *raw = NULL;
-  pthread_t thread;
 
-  pthread_create(&thread, NULL, sniffer, &raw);
   rawSocketView(window, &raw);
   gtk_main();
 }

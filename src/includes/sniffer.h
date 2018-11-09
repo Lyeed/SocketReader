@@ -117,5 +117,6 @@ void fill_data_dump(raw_packet_t **, unsigned char *, int);
 void print_raw(raw_packet_t *);
 void *timer(void);
 void import_pcapfile(char *, raw_packet_t **);
+char *getProtocol(const int);
 
 #endif

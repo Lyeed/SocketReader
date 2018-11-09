@@ -22,7 +22,8 @@ GTK_LDFLAGS=`pkg-config --libs gtk+-3.0`
 SRCS= 			src/main.c \
 						src/app.c \
 						src/views.c \
-						src/sniffer.c
+						src/sniffer.c \
+						src/record.c
 
 OBJS=				$(SRCS:.c=.o)
 
