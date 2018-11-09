@@ -16,9 +16,12 @@ static void *fill_list(void *data) {
       if ((tmp == NULL) || (/*(*view->raw)->num != tmp->num)*/1 == 1)) {
         tmp = *view->raw;
         gtk_list_store_append(view->store, &iter);
-        gtk_list_store_set(view->store, &iter, COLUMN_NUMBER, tmp->num,
+        gtk_list_store_set(view->store, &iter,
+                                          COLUMN_NUMBER, tmp->num,
+                                          COLUMN_TIME, tmp->time,
                                           COLUMN_SOURCE, tmp->ip->src_ip,
                                           COLUMN_DEST, tmp->ip->dest_ip,
+                                          COLUMN_PROTOCOL, tmp->proto,
                                           COLUMN_PULSE, 0,
                                           COLUMN_ICON, "",
                                           COLUMN_ACTIVE, FALSE,
@@ -31,7 +34,7 @@ static void *fill_list(void *data) {
 }
 
 static GtkListStore *create_model(void) {
-	return gtk_list_store_new(NUM_COLUMNS, G_TYPE_UFLOAT, G_TYPE_UINT, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_UINT, G_TYPE_STRING, G_TYPE_BOOLEAN, G_TYPE_BOOLEAN);
+	return gtk_list_store_new(NUM_COLUMNS, G_TYPE_FLOAT, G_TYPE_UINT, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_UINT, G_TYPE_STRING, G_TYPE_BOOLEAN, G_TYPE_BOOLEAN);
 }
 
 static void add_columns(GtkTreeView *treeview) {
