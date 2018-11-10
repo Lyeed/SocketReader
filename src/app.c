@@ -1,37 +1,45 @@
 #include "app.h"
 #include "views.h"
-#include "sniffer.h"
 
-static GtkWidget *appInit(void) {
-  GtkWidget *window;
-
-	gtk_init(NULL, NULL);
-	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-	gtk_window_set_screen(GTK_WINDOW(window), gtk_widget_get_screen(NULL));
-	g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
-  g_signal_connect(window, "delete-event", G_CALLBACK(gtk_main_quit), NULL);
-  gtk_window_set_default_size(GTK_WINDOW(window), 512, 512);
-  gtk_widget_show(window);
-	return window;
-}
-
-static int appDestroy(GtkWidget *window) {
-	gtk_widget_destroy(window);
+void *appDestroy(void) {
+  if (app) {
+    if (app->window) {
+      gtk_widget_destroy(app->window);
+    }
+  }
   gtk_main_quit();
-	window = NULL;
-	return 0;
+  return 0;
 }
 
-static void appRun(GtkWidget *window) {
-  raw_packet_t *raw = NULL;
+static void appInit(void) {
+	gtk_init(NULL, NULL);
+  app = malloc(sizeof(app_t));
+  if (!app) {
+    g_printerr("app malloc() failed\n");
+    exit(-1);
+  }
+	app->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  app->buttons = malloc(sizeof(buttons_t));
+  if (!app->buttons) {
+    g_printerr("app->buttons malloc() failed\n");
+    exit(-1);
+  }
+  app->raw = NULL;
+  app->store = NULL;
+  app->run = 0;
+	gtk_window_set_screen(GTK_WINDOW(app->window), gtk_widget_get_screen(NULL));
+	g_signal_connect(app->window, "destroy", G_CALLBACK(appDestroy), NULL);
+  g_signal_connect(app->window, "delete-event", G_CALLBACK(appDestroy), NULL);
+  gtk_window_set_default_size(GTK_WINDOW(app->window), 1024, 1024);
+  gtk_widget_show(app->window);
+}
 
-  rawSocketView(window, &raw);
+static void appRun(void) {
+  rawSocketView();
   gtk_main();
 }
 
-int appOpen() {
-	GtkWidget *mainWindow = appInit();
-
-	appRun(mainWindow);
-  return appDestroy(mainWindow);
+void appOpen(void) {
+	appInit();
+	appRun();
 }

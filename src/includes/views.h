@@ -4,11 +4,6 @@
 #ifndef VIEWS_H_
 #define VIEWS_H_
 
-typedef struct socketView {
-  raw_packet_t **raw;
-  GtkListStore *store;
-} socketView_t;
-
 enum {
 	COLUMN_NUMBER,
   COLUMN_TIME,
@@ -16,6 +11,7 @@ enum {
 	COLUMN_DEST,
   COLUMN_PROTOCOL,
   COLUMN_LENGTH,
+  COLUMN_INFO,
   COLUMN_PULSE,
   COLUMN_ICON,
   COLUMN_ACTIVE,
@@ -23,6 +19,8 @@ enum {
   NUM_COLUMNS
 };
 
-void rawSocketView(GtkWidget *, raw_packet_t **);
+void rawSocketView(void);
+void fill_list(raw_packet_t *);
+void rowActivated(GtkTreeView *, GtkTreePath *, GtkTreeViewColumn *, gpointer);
 
 #endif /* VIEWS_H_ */

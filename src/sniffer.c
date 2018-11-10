@@ -1,6 +1,8 @@
 #include "sniffer.h"
+#include "app.h"
+#include "views.h"
 
-void fill_ip_header(raw_packet_t **raw, unsigned char *buffer) {
+static void fill_ip_header(raw_packet_t *raw, unsigned char *buffer) {
   struct iphdr *iph = (struct iphdr *)(buffer + sizeof(struct ethhdr));
   ip_header_t *ip = malloc(sizeof(ip_header_t));
   struct sockaddr_in source;
@@ -23,10 +25,10 @@ void fill_ip_header(raw_packet_t **raw, unsigned char *buffer) {
   ip->src_ip = strdup(inet_ntoa(source.sin_addr));
   ip->dest_ip = strdup(inet_ntoa(dest.sin_addr));
 
-  (*raw)->ip = ip;
+  raw->ip = ip;
 }
 
-void fill_info_icmp(raw_packet_t **raw, unsigned char *buffer) {
+static void fill_info_icmp(raw_packet_t *raw, unsigned char *buffer) {
   struct iphdr *iph = (struct iphdr *)(buffer + sizeof(struct ethhdr));
   struct icmphdr *icmph = (struct icmphdr *)(buffer + (iph->ihl)*4 + sizeof(struct ethhdr));
   info_packet_t *inf = malloc(sizeof(info_packet_t));
@@ -40,11 +42,11 @@ void fill_info_icmp(raw_packet_t **raw, unsigned char *buffer) {
   inf->udp = NULL;
   inf->icmp = icmp;
 
-  (*raw)->info = inf;
-  (*raw)->proto = ICMP;
+  raw->info = inf;
+  raw->proto = ICMP;
 }
 
-void fill_info_tcp(raw_packet_t **raw, unsigned char *buffer) {
+static void fill_info_tcp(raw_packet_t *raw, unsigned char *buffer) {
   struct iphdr *iph = (struct iphdr *)(buffer + sizeof(struct ethhdr));
   struct tcphdr *tcph = (struct tcphdr *)(buffer + (iph->ihl)*4 + sizeof(struct ethhdr));
   info_packet_t *inf = malloc(sizeof(info_packet_t));
@@ -69,12 +71,12 @@ void fill_info_tcp(raw_packet_t **raw, unsigned char *buffer) {
   inf->udp = NULL;
   inf->icmp = NULL;
 
-  (*raw)->info = inf;
+  raw->info = inf;
 
-  (*raw)->proto = (tcp->src_port == 80 || tcp->dest_port == 80) ? HTTP : TCP;
+  raw->proto = (tcp->src_port == 80 || tcp->dest_port == 80) ? HTTP : TCP;
 }
 
-void fill_info_udp(raw_packet_t **raw, unsigned char *buffer) {
+static void fill_info_udp(raw_packet_t *raw, unsigned char *buffer) {
   struct iphdr *iph = (struct iphdr *)(buffer + sizeof(struct ethhdr));
   struct udphdr *udph = (struct udphdr *)(buffer + (iph->ihl)*4 + sizeof(struct ethhdr));
   info_packet_t *inf = malloc(sizeof(info_packet_t));
@@ -89,22 +91,22 @@ void fill_info_udp(raw_packet_t **raw, unsigned char *buffer) {
   inf->udp = udp;
   inf->icmp = NULL;
 
-  (*raw)->info = inf;
-  (*raw)->proto = (udp->src_port == 53 || udp->dest_port == 53) ? DNS : UDP;
+  raw->info = inf;
+  raw->proto = (udp->src_port == 53 || udp->dest_port == 53) ? DNS : UDP;
 }
 
-void fill_info_default(raw_packet_t **raw) {
+static void fill_info_default(raw_packet_t *raw) {
   info_packet_t *inf = malloc(sizeof(info_packet_t));
 
   inf->tcp = NULL;
   inf->udp = NULL;
   inf->icmp = NULL;
 
-  (*raw)->info = inf;
-  (*raw)->proto = Unknown;
+  raw->info = inf;
+  raw->proto = Unknown;
 }
 
-void fill_data_dump(raw_packet_t **raw, unsigned char *buffer, int size) {
+static void fill_data_dump(raw_packet_t *raw, unsigned char *buffer, const ssize_t size) {
   data_dump_t *dump = malloc(sizeof(data_dump_t));
   int i = 0;
   char *hexa = malloc(sizeof(char) * (long unsigned int)(size+1)*2);
@@ -126,10 +128,10 @@ void fill_data_dump(raw_packet_t **raw, unsigned char *buffer, int size) {
 
   dump->hexa = hexa;
   dump->ascii = ascii;
-  (*raw)->dump = dump;
+  raw->dump = dump;
 }
 
-void fill_ethernet_header(raw_packet_t **raw, unsigned char *buffer) {
+static void fill_ethernet_header(raw_packet_t *raw, unsigned char *buffer) {
   struct ethhdr *eth = (struct ethhdr *)buffer;
   ethernet_header_t *eh = malloc(sizeof(ethernet_header_t));
 
@@ -140,11 +142,11 @@ void fill_ethernet_header(raw_packet_t **raw, unsigned char *buffer) {
   eh->proto = ntohs(eth->h_proto);
   if (eh->proto == ETH_P_ARP)
     printf("ARP DETECTED !! :oooo\n");
-  (*raw)->eth = eh;
+  raw->eth = eh;
 }
 
-void fill_info_header(raw_packet_t **raw, unsigned char *buffer) {
-  switch ((*raw)->ip->proto) {
+static void fill_info_header(raw_packet_t *raw, unsigned char *buffer) {
+  switch (raw->ip->proto) {
 
   case 1: //ICMP
     fill_info_icmp(raw, buffer);
@@ -164,68 +166,62 @@ void fill_info_header(raw_packet_t **raw, unsigned char *buffer) {
   }
 }
 
-void fill_raw_packet(raw_packet_t **raw, unsigned char *buffer, int size, int num) {
+static void fill_raw_packet(unsigned char *buffer, const ssize_t size, int num) {
   struct ethhdr *eth = (struct ethhdr *)buffer;
-  if (ntohs(eth->h_proto) != ETH_P_IP)
+  if (ntohs(eth->h_proto) != ETH_P_IP) {
     return;
+  }
 
   raw_packet_t *packet = malloc(sizeof(raw_packet_t));
-  raw_packet_t *tmp = (*raw);
+  raw_packet_t *tmp = app->raw;
 
   packet->num = num;
-  packet->time = 0;
+  packet->time = app->timer;
   packet->proto = Unknown;
-  fill_ethernet_header(&packet, buffer);
-  fill_ip_header(&packet, buffer);
-  fill_info_header(&packet, buffer);
-  fill_data_dump(&packet, buffer, size);
+  fill_ethernet_header(packet, buffer);
+  fill_ip_header(packet, buffer);
+  fill_info_header(packet, buffer);
+  fill_data_dump(packet, buffer, size);
+  fill_list(packet);
   packet->next = NULL;
   if (tmp == NULL) {
-    (*raw) = packet;
+    app->raw = packet;
     return ;
   }
   print_raw(packet);
-  while (tmp->next != NULL)
+  while (tmp->next != NULL) {
     tmp = tmp->next;
+  }
   packet->prev = tmp;
   tmp->next = packet;
 }
 
 void *sniffer(void *data) {
-  raw_packet_t **raw = data;
-  int saddr_size;
-  int data_size;
-  int num = 1;
   struct sockaddr saddr;
   unsigned char *buffer = (unsigned char *)malloc(65536);
-  int sock_raw = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
-
+  ssize_t data_size;
+  int saddr_size,
+      num = 0,
+      sock_raw = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
   if (sock_raw == -1) {
     perror("Socket");
-    exit(0);
+    exit(-1);
   }
 
-  puts("Starting packets analyzer\n");
-  while (1) {
+  g_print("sniffer()\n");
+  while (app->run) {
     saddr_size = sizeof(saddr);
-    data_size = (int)recvfrom(sock_raw, buffer, 65536, 0, &saddr, (socklen_t*)&saddr_size);
+    data_size = recvfrom(sock_raw, buffer, 65536, 0, &saddr, (socklen_t*)&saddr_size);
     if (data_size < 0) {
-      puts("recvfrom failed\n");
+      g_printerr("recvfrom() failed\n");
     } else {
-      fill_raw_packet(raw, buffer, data_size, ++num);
+      fill_raw_packet(buffer, data_size, ++num);
     }
   }
 
+  (void)data;
   close(sock_raw);
-}
-
-void *timer() {
-  float timer = 0;
-  while (1) {
-    timer += (float)0.001;
-    usleep(1);
-    printf("%f\n", timer);
-  }
+  return NULL;
 }
 
 char *getProtocol(const int proto) {
@@ -296,7 +292,7 @@ void print_raw(raw_packet_t *raw) {
   printf("\n");
 }
 
-void import_pcapfile(char *pcapfile, raw_packet_t **raw) {
+void import_pcapfile(const char *pcapfile) {
 	FILE *f = fopen(pcapfile, "r");
 	int c;
 	int i = 0;
@@ -339,7 +335,7 @@ void import_pcapfile(char *pcapfile, raw_packet_t **raw) {
 			buffer[j++] = (unsigned char)c;
 			i++;
 		}
-		fill_raw_packet(raw, buffer, (stop-i), 0);
+		fill_raw_packet(buffer, (stop-i), 0);
 		j = 0;
 		size = 0;
 		pow = 1;

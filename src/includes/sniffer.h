@@ -94,7 +94,7 @@ typedef struct data_dump_s {
 
 typedef struct raw_packet_s {
   int num;
-  float time;
+  double time;
   protocol_t proto;
   ethernet_header_t *eth;
   ip_header_t *ip;
@@ -105,18 +105,9 @@ typedef struct raw_packet_s {
 } raw_packet_t;
 
 void *sniffer(void *);
-void fill_raw_packet(raw_packet_t **, unsigned char *, int, int);
-void fill_ethernet_header(raw_packet_t **, unsigned char *);
-void fill_ip_header(raw_packet_t **, unsigned char *);
-void fill_info_header(raw_packet_t **, unsigned char *);
-void fill_info_icmp(raw_packet_t **, unsigned char *);
-void fill_info_tcp(raw_packet_t **, unsigned char *);
-void fill_info_udp(raw_packet_t **, unsigned char *);
-void fill_info_default(raw_packet_t **);
-void fill_data_dump(raw_packet_t **, unsigned char *, int);
 void print_raw(raw_packet_t *);
 void *timer(void);
-void import_pcapfile(char *, raw_packet_t **);
+void import_pcapfile(const char *);
 char *getProtocol(const int);
 
 #endif

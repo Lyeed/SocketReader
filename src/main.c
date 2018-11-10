@@ -2,5 +2,6 @@
 #include "views.h"
 
 int main(void) {
-    return appOpen();
+    appOpen();
+    return 0;
 }
