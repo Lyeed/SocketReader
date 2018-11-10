@@ -202,7 +202,7 @@ void *sniffer(void *data) {
   ssize_t data_size;
   int saddr_size,
       num = 0,
-      sock_raw = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
+      sock_raw = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_IP));
   if (sock_raw == -1) {
     perror("Socket");
     exit(-1);
