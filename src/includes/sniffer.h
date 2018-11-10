@@ -105,9 +105,9 @@ typedef struct raw_packet_s {
 } raw_packet_t;
 
 void *sniffer(void *);
-void print_raw(raw_packet_t *);
-void *timer(void);
-void import_pcapfile(const char *);
+void print_raw(const raw_packet_t *);
 char *getProtocol(const int);
+void import_pcapfile(const char *);
+void export_pcapfile(const char *);
 
 #endif
