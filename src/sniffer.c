@@ -202,7 +202,7 @@ void *sniffer(void *data) {
   ssize_t data_size;
   int saddr_size,
       num = 0,
-      sock_raw = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
+      sock_raw = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_IP));
   if (sock_raw == -1) {
     perror("Socket");
     exit(-1);
@@ -212,10 +212,12 @@ void *sniffer(void *data) {
   while (app->run) {
     saddr_size = sizeof(saddr);
     data_size = recvfrom(sock_raw, buffer, 65536, 0, &saddr, (socklen_t*)&saddr_size);
-    if (data_size < 0) {
-      g_printerr("recvfrom() failed\n");
-    } else {
-      fill_raw_packet(buffer, data_size, ++num);
+    if (app->run) {
+      if (data_size < 0) {
+        g_printerr("recvfrom() failed\n");
+      } else {
+        fill_raw_packet(buffer, data_size, ++num);
+      }
     }
   }
 
@@ -252,7 +254,7 @@ char *getProtocol(const int proto) {
   return protocol;
 }
 
-void print_raw(raw_packet_t *raw) {
+void print_raw(const raw_packet_t *raw) {
   printf("##############################\n");
   printf("Number: %d\n", raw->num);
   printf("protocol: %s\n", getProtocol(raw->proto));
@@ -292,14 +294,22 @@ void print_raw(raw_packet_t *raw) {
   printf("\n");
 }
 
-void import_pcapfile(const char *pcapfile) {
-	FILE *f = fopen(pcapfile, "r");
-	int c;
-	int i = 0;
-	int j = 0;
-	int stop = 0;
-	int pow = 1;
-	int size = 0;
+void export_pcapfile(const char *file) {
+  g_print("export_pcapfile() %s\n", file);
+  app->raw = NULL;
+}
+
+void import_pcapfile(const char *file) {
+  g_print("import_pcapfile() %s\n", file);
+  app->raw = NULL;
+	FILE *f = fopen(file, "r");
+	int c,
+	    i = 0,
+	    j = 0,
+	    stop = 0,
+	    pow = 1,
+	    size = 0,
+      num = 0;
 
 	while (i < 24 && !feof(f)) { // GLOBAL HEADER
 		c = fgetc(f);
@@ -320,7 +330,6 @@ void import_pcapfile(const char *pcapfile) {
 			pow = pow * 256;
 			i++;
 		}
-		printf("size=%d\n", size);
 
 		stop = i + 4;
 		while (i < stop && !feof(f)) { // PACKET HEADER SIZE 2
@@ -335,7 +344,8 @@ void import_pcapfile(const char *pcapfile) {
 			buffer[j++] = (unsigned char)c;
 			i++;
 		}
-		fill_raw_packet(buffer, (stop-i), 0);
+
+		fill_raw_packet(buffer, (stop-i), ++num);
 		j = 0;
 		size = 0;
 		pow = 1;
@@ -343,12 +353,3 @@ void import_pcapfile(const char *pcapfile) {
 
 	fclose(f);
 }
-
-// int main(int ac, char **av) {
-//   raw_packet_t *raw = NULL;
-
-//   import_pcapfile(av[1], &raw);
-//   print_raw(raw);
-
-//   return 0;
-// }
