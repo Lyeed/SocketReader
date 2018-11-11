@@ -8,11 +8,11 @@ void fill_list(const raw_packet_t *packet) {
   printf("B\n");
   gtk_list_store_set(app->store, &app->iter,
                                     COLUMN_NUMBER, packet->num,
-                                    COLUMN_TIME, 0,
-                                    COLUMN_SOURCE, "",
-                                    COLUMN_DEST, "",
-                                    COLUMN_PROTOCOL, "",
-                                    COLUMN_LENGTH, 0,
+                                    COLUMN_TIME, packet->time,
+                                    COLUMN_SOURCE, packet->ip->src_ip,
+                                    COLUMN_DEST, packet->ip->dest_ip,
+                                    COLUMN_PROTOCOL, getProtocol(packet->proto),
+                                    COLUMN_LENGTH, packet->length,
                                     COLUMN_INFO, "Packet info",
                                     -1);
   printf("C\n");
