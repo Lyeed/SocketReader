@@ -312,19 +312,19 @@ void import_pcapfile(const char *file) {
     stop = 0,
     pow = 1,
     size = 0;
-  
+
   while (i < 24 && !feof(f)) { // GLOBAL HEADER
     c = fgetc(f);
     i++;
   }
-  
+
   while (!feof(f)) {
     stop = i + 8;
     while (i < stop && !feof(f)) { // PACKET HEADER TIMER
       c = fgetc(f);
       i++;
     }
-    
+
     stop = i + 4;
     while (i < stop && !feof(f)) { // PACKET HEADER SIZE
       c = fgetc(f);
@@ -338,7 +338,7 @@ void import_pcapfile(const char *file) {
       c = fgetc(f);
       i++;
     }
-    
+
     stop = i + size;
     unsigned char *buffer = malloc(sizeof(char) * (long unsigned int)(size + 1));
     while (i < stop && !feof(f)) { // READ PACKET
@@ -353,6 +353,6 @@ void import_pcapfile(const char *file) {
     size = 0;
     pow = 1;
   }
-  
+
   fclose(f);
 }

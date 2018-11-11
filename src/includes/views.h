@@ -12,15 +12,11 @@ enum {
   COLUMN_PROTOCOL,
   COLUMN_LENGTH,
   COLUMN_INFO,
-  COLUMN_PULSE,
-  COLUMN_ICON,
-  COLUMN_ACTIVE,
-  COLUMN_SENSITIVE,
   NUM_COLUMNS
 };
 
 void rawSocketView(void);
-void fill_list(raw_packet_t *);
+void fill_list(const raw_packet_t *);
 void rowActivated(GtkTreeView *, GtkTreePath *, GtkTreeViewColumn *, gpointer);
 
 #endif /* VIEWS_H_ */

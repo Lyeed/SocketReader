@@ -26,7 +26,7 @@ static void appInit(void) {
   }
   app->raw = NULL;
   app->store = NULL;
-  app->run = 0;
+  app->run = 1;
 	gtk_window_set_screen(GTK_WINDOW(app->window), gtk_widget_get_screen(NULL));
 	g_signal_connect(app->window, "destroy", G_CALLBACK(appDestroy), NULL);
   g_signal_connect(app->window, "delete-event", G_CALLBACK(appDestroy), NULL);

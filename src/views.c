@@ -2,21 +2,20 @@
 #include "record.h"
 #include "app.h"
 
-void fill_list(raw_packet_t *packet) {
+void fill_list(const raw_packet_t *packet) {
+  printf("A\n");
   gtk_list_store_append(app->store, &app->iter);
+  printf("B\n");
   gtk_list_store_set(app->store, &app->iter,
                                     COLUMN_NUMBER, packet->num,
-                                    COLUMN_TIME, packet->time,
-                                    COLUMN_SOURCE, packet->ip->src_ip,
-                                    COLUMN_DEST, packet->ip->dest_ip,
-                                    COLUMN_PROTOCOL, getProtocol(packet->proto),
-                                    COLUMN_LENGTH, packet->length,
+                                    COLUMN_TIME, 0,
+                                    COLUMN_SOURCE, "",
+                                    COLUMN_DEST, "",
+                                    COLUMN_PROTOCOL, "",
+                                    COLUMN_LENGTH, 0,
                                     COLUMN_INFO, "Packet info",
-                                    COLUMN_PULSE, 0,
-                                    COLUMN_ICON, "",
-                                    COLUMN_ACTIVE, FALSE,
-                                    COLUMN_SENSITIVE, FALSE,
                                     -1);
+  printf("C\n");
 }
 
 static void add_columns(GtkTreeView *treeview) {
@@ -116,16 +115,12 @@ static GtkWidget *create_list_widget(void) {
   GtkWidget *list = gtk_scrolled_window_new(NULL, NULL);
   app->store = gtk_list_store_new(NUM_COLUMNS,
                                            G_TYPE_UINT,
-                                           G_TYPE_FLOAT,
+                                           G_TYPE_DOUBLE,
                                            G_TYPE_STRING,
                                            G_TYPE_STRING,
                                            G_TYPE_STRING,
                                            G_TYPE_UINT,
-                                           G_TYPE_STRING,
-                                           G_TYPE_UINT,
-                                           G_TYPE_STRING,
-                                           G_TYPE_BOOLEAN,
-                                           G_TYPE_BOOLEAN);
+                                           G_TYPE_STRING);
   GtkTreeModel *model = GTK_TREE_MODEL(app->store);
   GtkWidget *treeview = gtk_tree_view_new_with_model(model);
 
