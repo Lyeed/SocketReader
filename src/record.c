@@ -6,10 +6,10 @@ void *timer_start(void *data) {
   g_print("timer_start() thread\n");
   (void)data;
   app->timer = 0;
-  while (app->run) {
+  /*while (app->run) {
     app->timer += 0.0001;
     usleep(1);
-  }
+    }*/
   g_print("timer_start() exited\n");
   return NULL;
 }
