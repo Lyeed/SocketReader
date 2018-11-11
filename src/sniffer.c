@@ -2,6 +2,8 @@
 #include "app.h"
 #include "views.h"
 
+int numb = 1;
+
 static void fill_ip_header(raw_packet_t *raw, unsigned char *buffer) {
   struct iphdr *iph = (struct iphdr *)(buffer + sizeof(struct ethhdr));
   ip_header_t *ip = malloc(sizeof(ip_header_t));
@@ -166,7 +168,7 @@ static void fill_info_header(raw_packet_t *raw, unsigned char *buffer) {
   }
 }
 
-static void fill_raw_packet(unsigned char *buffer, const ssize_t size, int num) {
+static void fill_raw_packet(unsigned char *buffer, const ssize_t size) {
   struct ethhdr *eth = (struct ethhdr *)buffer;
   if (ntohs(eth->h_proto) != ETH_P_IP) {
     return;
@@ -175,9 +177,10 @@ static void fill_raw_packet(unsigned char *buffer, const ssize_t size, int num) 
   raw_packet_t *packet = malloc(sizeof(raw_packet_t));
   raw_packet_t *tmp = app->raw;
 
-  packet->num = num;
+  packet->num = numb++;
   packet->time = app->timer;
   packet->proto = Unknown;
+  packet->length = (int)size;
   fill_ethernet_header(packet, buffer);
   fill_ip_header(packet, buffer);
   fill_info_header(packet, buffer);
@@ -201,8 +204,8 @@ void *sniffer(void *data) {
   unsigned char *buffer = (unsigned char *)malloc(65536);
   ssize_t data_size;
   int saddr_size,
-      num = 0,
       sock_raw = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_IP));
+
   if (sock_raw == -1) {
     perror("Socket");
     exit(-1);
@@ -216,7 +219,7 @@ void *sniffer(void *data) {
       if (data_size < 0) {
         g_printerr("recvfrom() failed\n");
       } else {
-        fill_raw_packet(buffer, data_size, ++num);
+        fill_raw_packet(buffer, data_size);
       }
     }
   }
@@ -258,7 +261,7 @@ void print_raw(const raw_packet_t *raw) {
   printf("##############################\n");
   printf("Number: %d\n", raw->num);
   printf("protocol: %s\n", getProtocol(raw->proto));
-
+  printf("length: %d\n", raw->length);
   /*printf("\nPACKET ETHERNET HEADER\n");
   printf("%s\n", raw->eth->src_addr);
   printf("%s\n", raw->eth->dest_addr);
@@ -302,54 +305,54 @@ void export_pcapfile(const char *file) {
 void import_pcapfile(const char *file) {
   g_print("import_pcapfile() %s\n", file);
   app->raw = NULL;
-	FILE *f = fopen(file, "r");
-	int c,
-	    i = 0,
-	    j = 0,
-	    stop = 0,
-	    pow = 1,
-	    size = 0,
-      num = 0;
-
-	while (i < 24 && !feof(f)) { // GLOBAL HEADER
-		c = fgetc(f);
-		i++;
-	}
-
-	while (!feof(f)) {
-		stop = i + 8;
-		while (i < stop && !feof(f)) { // PACKET HEADER TIMER
-			c = fgetc(f);
-			i++;
-		}
-
-		stop = i + 4;
-		while (i < stop && !feof(f)) { // PACKET HEADER SIZE
-			c = fgetc(f);
-			size += c * pow;
-			pow = pow * 256;
-			i++;
-		}
-
-		stop = i + 4;
-		while (i < stop && !feof(f)) { // PACKET HEADER SIZE 2
-			c = fgetc(f);
-			i++;
-		}
-
-		stop = i + size;
-		unsigned char *buffer = malloc(sizeof(char) * (long unsigned int)(stop-i+1));
-		while (i < stop && !feof(f)) { // READ PACKET
-			c = fgetc(f);
-			buffer[j++] = (unsigned char)c;
-			i++;
-		}
-
-		fill_raw_packet(buffer, (stop-i), ++num);
-		j = 0;
-		size = 0;
-		pow = 1;
-	}
-
-	fclose(f);
+  FILE *f = fopen(file, "r");
+  int c,
+    i = 0,
+    j = 0,
+    stop = 0,
+    pow = 1,
+    size = 0;
+  
+  while (i < 24 && !feof(f)) { // GLOBAL HEADER
+    c = fgetc(f);
+    i++;
+  }
+  
+  while (!feof(f)) {
+    stop = i + 8;
+    while (i < stop && !feof(f)) { // PACKET HEADER TIMER
+      c = fgetc(f);
+      i++;
+    }
+    
+    stop = i + 4;
+    while (i < stop && !feof(f)) { // PACKET HEADER SIZE
+      c = fgetc(f);
+      size += c * pow;
+      if (i+1 != stop)
+	pow = pow * 256;
+      i++;
+    }
+    stop = i + 4;
+    while (i < stop && !feof(f)) { // PACKET HEADER SIZE 2
+      c = fgetc(f);
+      i++;
+    }
+    
+    stop = i + size;
+    unsigned char *buffer = malloc(sizeof(char) * (long unsigned int)(size + 1));
+    while (i < stop && !feof(f)) { // READ PACKET
+      c = fgetc(f);
+      buffer[j++] = (unsigned char)c;
+      i++;
+    }
+    if (c != -1) {
+      fill_raw_packet(buffer, size);
+    }
+    j = 0;
+    size = 0;
+    pow = 1;
+  }
+  
+  fclose(f);
 }

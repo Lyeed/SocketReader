@@ -95,6 +95,7 @@ typedef struct data_dump_s {
 typedef struct raw_packet_s {
   int num;
   double time;
+  int length;
   protocol_t proto;
   ethernet_header_t *eth;
   ip_header_t *ip;

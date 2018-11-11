@@ -10,7 +10,7 @@ void fill_list(raw_packet_t *packet) {
                                     COLUMN_SOURCE, packet->ip->src_ip,
                                     COLUMN_DEST, packet->ip->dest_ip,
                                     COLUMN_PROTOCOL, getProtocol(packet->proto),
-                                    COLUMN_LENGTH, packet->ip->total_len,
+                                    COLUMN_LENGTH, packet->length,
                                     COLUMN_INFO, "Packet info",
                                     COLUMN_PULSE, 0,
                                     COLUMN_ICON, "",
