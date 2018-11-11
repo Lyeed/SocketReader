@@ -110,15 +110,16 @@ static void fill_info_default(raw_packet_t *raw) {
 
 static void fill_data_dump(raw_packet_t *raw, unsigned char *buffer, const ssize_t size) {
   data_dump_t *dump = malloc(sizeof(data_dump_t));
-  int i = 0;
+  int i = 0;  
   char *hexa = malloc(sizeof(char) * (size_t)(size+1)*2);
   char *tmp = malloc(sizeof(char) * 5);
   char *ascii = malloc(sizeof(char) * (size_t)(size+1)*2);
 
   for (i = 0; i < size; i++) {
     sprintf(tmp, "%02X", (unsigned int)buffer[i]);
-    strcat(hexa, tmp);
+    i == 0 ? strcpy(hexa, tmp) : strcat(hexa, tmp);
   }
+  free(tmp);
 
   for (i = 0; i < size; i++) {
     if (buffer[i] >= 32 && buffer[i] <= 128)
@@ -317,14 +318,14 @@ void import_pcapfile(const char *file) {
     c = fgetc(f);
     i++;
   }
-
+  
   while (!feof(f)) {
     stop = i + 8;
     while (i < stop && !feof(f)) { // PACKET HEADER TIMER
       c = fgetc(f);
       i++;
     }
-
+    
     stop = i + 4;
     while (i < stop && !feof(f)) { // PACKET HEADER SIZE
       c = fgetc(f);
@@ -338,14 +339,14 @@ void import_pcapfile(const char *file) {
       c = fgetc(f);
       i++;
     }
-
+    
     stop = i + size;
     unsigned char *buffer = malloc((size_t)size);
     while (i < stop && !feof(f)) { // READ PACKET
       c = fgetc(f);
-      buffer[j++] = (unsigned char)c;
-      i++;
-    }
+       buffer[j++] = (unsigned char)c;
+       i++;
+     }
     if (c != -1) {
       fill_raw_packet(buffer, size);
     }
@@ -354,6 +355,6 @@ void import_pcapfile(const char *file) {
     size = 0;
     pow = 1;
   }
-
+  
   fclose(f);
 }
