@@ -81,7 +81,7 @@ static GtkWidget *create_actions_widget(void) {
   app->buttons->buttonExport = gtk_button_new_with_label("Export");
   g_signal_connect(app->buttons->buttonExport, "clicked", G_CALLBACK(record_export), NULL);
   gtk_container_add(GTK_CONTAINER(bbox), app->buttons->buttonExport);
-  gtk_widget_set_sensitive(app->buttons->buttonExport, FALSE);
+  //gtk_widget_set_sensitive(app->buttons->buttonExport, FALSE);
 
   return frame;
 }

@@ -179,14 +179,14 @@ static void fill_raw_packet(unsigned char *buffer, const ssize_t size) {
   raw_packet_t *tmp = app->raw;
 
   packet->num = numb++;
-  packet->time = app->timer;
+  packet->time = 0;//app->timer;
   packet->proto = Unknown;
   packet->length = (int)size;
   fill_ethernet_header(packet, buffer);
   fill_ip_header(packet, buffer);
   fill_info_header(packet, buffer);
   fill_data_dump(packet, buffer, size);
-  fill_list(packet);
+  //fill_list(packet);
   packet->next = NULL;
   if (tmp == NULL) {
     app->raw = packet;
@@ -373,11 +373,13 @@ void export_pcapfile(const char *file) {
       dup += (raw->dump->hexa[i] >= '0' && raw->dump->hexa[i] <= '9') ? (raw->dump->hexa[i] - '0') * 16 : (raw->dump->hexa[i] - 'A' + 10) * 16;
       dup += (raw->dump->hexa[i+1] >= '0' && raw->dump->hexa[i+1] <= '9') ? (raw->dump->hexa[i+1] - '0') : (raw->dump->hexa[i+1] - 'A' + 10);
       fprintf(f, "%c", dup);
+      printf("%c%c -> %d\n", raw->dump->hexa[i],raw->dump->hexa[i+1], dup);
       i += 2;
       dup = 0;
     }
     i = 0;
     raw = raw->next;
+    printf("\n\n\n");
   }
 
 }
