@@ -353,7 +353,7 @@ void export_pcapfile(const char *file) {
   fprintf(f, "%c%c%c%c", 1, 0, 0, 0); //network
 
   while (raw != NULL) {
-    size = raw->length;
+    size = strlen(raw->dump->hexa)/2;
 
     fprintf(f, "%c%c%c%c", 0, 0, 0, 0); //sec
     fprintf(f, "%c%c%c%c", 0, 0, 0, 0); //usec
@@ -365,7 +365,7 @@ void export_pcapfile(const char *file) {
     }
     i = 0;
     pow = 1677216;
-    size = raw->length;
+    size = strlen(raw->dump->hexa);
     fprintf(f, "%c%c%c%c", ziz[3], ziz[2], ziz[1], ziz[0]);
     fprintf(f, "%c%c%c%c", ziz[3], ziz[2], ziz[1], ziz[0]);
 
