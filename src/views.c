@@ -3,19 +3,16 @@
 #include "app.h"
 
 void fill_list(const raw_packet_t *packet) {
-  printf("A\n");
   gtk_list_store_append(app->store, &app->iter);
-  printf("B\n");
   gtk_list_store_set(app->store, &app->iter,
-                                    COLUMN_NUMBER, packet->num,
-                                    COLUMN_TIME, packet->time,
-                                    COLUMN_SOURCE, packet->ip->src_ip,
-                                    COLUMN_DEST, packet->ip->dest_ip,
-                                    COLUMN_PROTOCOL, getProtocol(packet->proto),
-                                    COLUMN_LENGTH, packet->length,
-                                    COLUMN_INFO, "Packet info",
-                                    -1);
-  printf("C\n");
+		     COLUMN_NUMBER, packet->num,
+		     COLUMN_TIME, packet->time,
+		     COLUMN_SOURCE, packet->ip->src_ip,
+		     COLUMN_DEST, packet->ip->dest_ip,
+		     COLUMN_PROTOCOL, getProtocol(packet->proto),
+		     COLUMN_LENGTH, packet->length,
+		     COLUMN_INFO, getInfo(packet),
+		     -1);
 }
 
 static void add_columns(GtkTreeView *treeview) {
