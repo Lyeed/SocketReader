@@ -360,11 +360,12 @@ void export_pcapfile(const char *file) {
 
     while (pow > 0) {
       ziz[i++] = size / pow;
+      printf("size=%d pow=%d\n", size/pow, pow);
       size = size % pow;
       pow = pow / 256;
     }
     i = 0;
-    pow = 1677216;
+    pow = 16777216;
     size = strlen(raw->dump->hexa);
     fprintf(f, "%c%c%c%c", ziz[3], ziz[2], ziz[1], ziz[0]);
     fprintf(f, "%c%c%c%c", ziz[3], ziz[2], ziz[1], ziz[0]);
@@ -373,7 +374,7 @@ void export_pcapfile(const char *file) {
       dup += (raw->dump->hexa[i] >= '0' && raw->dump->hexa[i] <= '9') ? (raw->dump->hexa[i] - '0') * 16 : (raw->dump->hexa[i] - 'A' + 10) * 16;
       dup += (raw->dump->hexa[i+1] >= '0' && raw->dump->hexa[i+1] <= '9') ? (raw->dump->hexa[i+1] - '0') : (raw->dump->hexa[i+1] - 'A' + 10);
       fprintf(f, "%c", dup);
-      printf("%c%c -> %d\n", raw->dump->hexa[i],raw->dump->hexa[i+1], dup);
+      //printf("%c%c -> %d\n", raw->dump->hexa[i],raw->dump->hexa[i+1], dup);
       i += 2;
       dup = 0;
     }
