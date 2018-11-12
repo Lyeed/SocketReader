@@ -186,7 +186,7 @@ static void fill_raw_packet(unsigned char *buffer, const ssize_t size) {
   fill_ip_header(packet, buffer);
   fill_info_header(packet, buffer);
   fill_data_dump(packet, buffer, size);
-  //fill_list(packet);
+  fill_list(packet);
   packet->next = NULL;
   if (tmp == NULL) {
     app->raw = packet;
