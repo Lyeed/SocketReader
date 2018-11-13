@@ -34,7 +34,6 @@ void record_stop(GtkWidget *widget, gpointer data) {
   gtk_widget_set_sensitive(widget, FALSE);
   gtk_widget_set_sensitive(app->buttons->buttonStart, TRUE);
   gtk_widget_set_sensitive(app->buttons->buttonImport, TRUE);
-  gtk_widget_set_sensitive(app->buttons->buttonExport, FALSE);
   app->run = 0;
   (void)data;
 }
@@ -77,6 +76,7 @@ void record_import(GtkWidget *widget, gpointer data) {
     g_free(filename);
   }
   gtk_widget_destroy(dialog);
+  gtk_widget_set_sensitive(app->buttons->buttonExport, TRUE);
   (void)data;
   (void)widget;
 }

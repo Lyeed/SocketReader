@@ -179,7 +179,7 @@ static void fill_raw_packet(unsigned char *buffer, const ssize_t size) {
   raw_packet_t *tmp = app->raw;
 
   packet->num = numb++;
-  packet->time = app->timer;
+  packet->time = 0;//app->timer;
   packet->proto = Unknown;
   packet->length = (int)size;
   fill_ethernet_header(packet, buffer);
@@ -228,6 +228,57 @@ void *sniffer(void *data) {
   (void)data;
   close(sock_raw);
   return NULL;
+}
+
+char *getInfo(const raw_packet_t *raw) {
+  char *info = malloc(sizeof(char) * 100);
+
+  switch (raw->proto) {
+  case 1:
+  case 5:
+    sprintf(info, "%d", raw->info->tcp->src_port);
+    strcat(info, " -> ");
+    sprintf(info + strlen(info), "%d", raw->info->tcp->dest_port);
+    strcat(info, ", win= ");
+    sprintf(info + strlen(info), "%d", raw->info->tcp->window);
+    break;
+  case 2:
+  case 6:
+    sprintf(info, "%d", raw->info->udp->src_port);
+    strcat(info, " -> ");
+    sprintf(info + strlen(info), "%d", raw->info->udp->dest_port);
+    break;
+  case 3:
+    strcpy(info, "type= ");
+    sprintf(info, "%d", raw->info->icmp->type);
+    break;
+  default:
+    strcpy(info, raw->eth->src_addr);
+    strcat(info, " -> ");
+    strcat(info, raw->eth->dest_addr);
+    break;
+  }
+  return info;
+}
+
+char *getBigDetails(const int num) {
+  return num != 0 ? strdup("t pd") : strdup("ok ta mer");
+}
+
+char *getHexa(const int num) {
+  return strdup("fail");
+}
+
+char *getAscii(const int num) {
+  return strdup("fail");
+}
+
+char *getAddrSource(const int num) {
+  return strdup("fail");
+}
+
+char *getAddrDest(const int num) {
+  return strdup("fail");
 }
 
 char *getProtocol(const int proto) {
@@ -299,12 +350,58 @@ void print_raw(const raw_packet_t *raw) {
 }
 
 void export_pcapfile(const char *file) {
-  g_print("export_pcapfile() %s\n", file);
-  app->raw = NULL;
+  //g_print("export_pcapfile() %s\n", file);
+  printf("\n\nEXPORT\n\n");
+  FILE *f = fopen(file, "w");
+  raw_packet_t *raw = app->raw;
+  int pow = 16777216;
+  int size = 0;
+  unsigned char ziz[4];
+  unsigned char dup = 0;
+  int i = 0;
+
+  fprintf(f, "%c%c%c%c", 212, 195, 178, 161); //magic number
+  fprintf(f, "%c%c%c%c", 2, 0, 4, 0); // version
+  fprintf(f, "%c%c%c%c", 0, 0, 0, 0); //zone
+  fprintf(f, "%c%c%c%c", 0, 0, 0, 0); //sig
+  fprintf(f, "%c%c%c%c", 255, 255, 0, 0); //snap
+  fprintf(f, "%c%c%c%c", 1, 0, 0, 0); //network
+
+  while (raw != NULL) {
+    size = strlen(raw->dump->hexa)/2;
+
+    fprintf(f, "%c%c%c%c", 0, 0, 0, 0); //sec
+    fprintf(f, "%c%c%c%c", 0, 0, 0, 0); //usec
+
+    while (pow > 0) {
+      ziz[i++] = size / pow;
+      printf("size=%d pow=%d\n", size/pow, pow);
+      size = size % pow;
+      pow = pow / 256;
+    }
+    i = 0;
+    pow = 16777216;
+    size = strlen(raw->dump->hexa);
+    fprintf(f, "%c%c%c%c", ziz[3], ziz[2], ziz[1], ziz[0]);
+    fprintf(f, "%c%c%c%c", ziz[3], ziz[2], ziz[1], ziz[0]);
+
+    while (i < size) {
+      dup += (raw->dump->hexa[i] >= '0' && raw->dump->hexa[i] <= '9') ? (raw->dump->hexa[i] - '0') * 16 : (raw->dump->hexa[i] - 'A' + 10) * 16;
+      dup += (raw->dump->hexa[i+1] >= '0' && raw->dump->hexa[i+1] <= '9') ? (raw->dump->hexa[i+1] - '0') : (raw->dump->hexa[i+1] - 'A' + 10);
+      fprintf(f, "%c", dup);
+      //printf("%c%c -> %d\n", raw->dump->hexa[i],raw->dump->hexa[i+1], dup);
+      i += 2;
+      dup = 0;
+    }
+    i = 0;
+    raw = raw->next;
+    printf("\n\n\n");
+  }
+
 }
 
 void import_pcapfile(const char *file) {
-  g_print("import_pcapfile() %s\n", file);
+  //g_print("import_pcapfile() %s\n", file);
   app->raw = NULL;
   FILE *f = fopen(file, "r");
   int c,
