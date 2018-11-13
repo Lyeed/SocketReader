@@ -13,6 +13,7 @@ typedef struct buttons {
   GtkWidget *buttonStop;
   GtkWidget *buttonImport;
   GtkWidget *buttonExport;
+  GtkWidget *buttonFilters;
 } buttons_t;
 
 typedef struct app {
@@ -21,6 +22,8 @@ typedef struct app {
   GtkWidget *text;
   GtkListStore *store;
   GtkTreeIter iter;
+  GtkTextBuffer *buffer;
+  char *filters;
   int run;
   double timer;
   buttons_t *buttons;

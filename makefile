@@ -23,7 +23,8 @@ SRCS= 			src/main.c \
 						src/app.c \
 						src/views.c \
 						src/sniffer.c \
-						src/record.c
+						src/record.c \
+						src/dialog.c
 
 OBJS=				$(SRCS:.c=.o)
 

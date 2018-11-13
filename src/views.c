@@ -1,6 +1,7 @@
 #include "views.h"
 #include "record.h"
 #include "app.h"
+#include "dialog.h"
 
 void fill_list(const raw_packet_t *packet) {
   gtk_list_store_append(app->store, &app->iter);
@@ -83,6 +84,10 @@ static GtkWidget *create_actions_widget(void) {
   gtk_container_add(GTK_CONTAINER(bbox), app->buttons->buttonExport);
   gtk_widget_set_sensitive(app->buttons->buttonExport, FALSE);
 
+  app->buttons->buttonFilters = gtk_button_new_with_label("Filters");
+  g_signal_connect(app->buttons->buttonFilters, "clicked", G_CALLBACK(textDialogOpen), NULL);
+  gtk_container_add(GTK_CONTAINER(bbox), app->buttons->buttonFilters);
+
   return frame;
 }
 
@@ -95,16 +100,11 @@ void rowActivated(GtkTreeView *treeview, GtkTreePath *path, GtkTreeViewColumn *c
   model = gtk_tree_view_get_model(treeview);
   if (gtk_tree_model_get_iter(model, &iter, path)) {
     GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(app->text));
-    char str[1024];
     guint id;
-    gchar *dest;
 
     gtk_tree_model_get(model, &iter, COLUMN_NUMBER, &id, -1);
-    gtk_tree_model_get(model, &iter, COLUMN_DEST, &dest, -1);
-
-    sprintf(str, "Packet %d info", id);
     g_print("rowActivated() id:%d\n", id);
-    gtk_text_buffer_set_text(buffer, str, -1);
+    gtk_text_buffer_set_text(buffer, getBigDetails(id), -1);
   }
 }
 
