@@ -4,6 +4,26 @@
 
 int numb = 1;
 
+static void fill_info_arp(raw_packet_t *raw, unsigned char *buffer) {
+  struct arphdr *arph = (struct arphdr *)(buffer + sizeof(struct ethhdr));
+  info_packet_t *inf = malloc(sizeof(info_packet_t));
+  arp_header_t *arp = malloc(sizeof(arp_header_t));
+
+  arp->hrdw_f = arph->ar_hrd;
+  arp->proto_f = arph->ar_pro;
+  arp->hrdw_len = arph->ar_hln;
+  arp->proto_len = arph->ar_pln;
+  arp->op = arph->ar_op;
+
+  inf->tcp = NULL;
+  inf->udp = NULL;
+  inf->icmp = NULL;
+  inf->arp = arp;
+  
+  raw->info = inf;
+  raw->proto = ARP;
+}
+
 static void fill_ip_header(raw_packet_t *raw, unsigned char *buffer) {
   struct iphdr *iph = (struct iphdr *)(buffer + sizeof(struct ethhdr));
   ip_header_t *ip = malloc(sizeof(ip_header_t));
@@ -43,7 +63,8 @@ static void fill_info_icmp(raw_packet_t *raw, unsigned char *buffer) {
   inf->tcp = NULL;
   inf->udp = NULL;
   inf->icmp = icmp;
-
+  inf->arp = NULL;
+  
   raw->info = inf;
   raw->proto = ICMP;
 }
@@ -72,9 +93,9 @@ static void fill_info_tcp(raw_packet_t *raw, unsigned char *buffer) {
   inf->tcp = tcp;
   inf->udp = NULL;
   inf->icmp = NULL;
+  inf->arp = NULL;
 
   raw->info = inf;
-
   raw->proto = (tcp->src_port == 80 || tcp->dest_port == 80) ? HTTP : TCP;
 }
 
@@ -92,6 +113,7 @@ static void fill_info_udp(raw_packet_t *raw, unsigned char *buffer) {
   inf->tcp = NULL;
   inf->udp = udp;
   inf->icmp = NULL;
+  inf->arp = NULL;
 
   raw->info = inf;
   raw->proto = (udp->src_port == 53 || udp->dest_port == 53) ? DNS : UDP;
@@ -103,6 +125,7 @@ static void fill_info_default(raw_packet_t *raw) {
   inf->tcp = NULL;
   inf->udp = NULL;
   inf->icmp = NULL;
+  inf->arp = NULL;
 
   raw->info = inf;
   raw->proto = Unknown;
@@ -171,7 +194,7 @@ static void fill_info_header(raw_packet_t *raw, unsigned char *buffer) {
 
 static void fill_raw_packet(unsigned char *buffer, const ssize_t size) {
   struct ethhdr *eth = (struct ethhdr *)buffer;
-  if (ntohs(eth->h_proto) != ETH_P_IP) {
+  if (ntohs(eth->h_proto) != ETH_P_IP && ntohs(eth->h_proto) != ETH_P_ARP) {
     return;
   }
 
@@ -183,16 +206,24 @@ static void fill_raw_packet(unsigned char *buffer, const ssize_t size) {
   packet->proto = Unknown;
   packet->length = (int)size;
   fill_ethernet_header(packet, buffer);
-  fill_ip_header(packet, buffer);
-  fill_info_header(packet, buffer);
+
+  if (ntohs(eth->h_proto) == ETH_P_ARP) {
+    packet->ip = NULL;
+    fill_info_arp(packet, buffer);
+  }
+  else {
+    fill_ip_header(packet, buffer);
+    fill_info_header(packet, buffer);
+  }
+  
   fill_data_dump(packet, buffer, size);
-  fill_list(packet);
+  //fill_list(packet);
   packet->next = NULL;
+  print_raw(packet);
   if (tmp == NULL) {
     app->raw = packet;
     return ;
   }
-  print_raw(packet);
   while (tmp->next != NULL) {
     tmp = tmp->next;
   }
@@ -205,7 +236,7 @@ void *sniffer(void *data) {
   unsigned char *buffer = (unsigned char *)malloc(65536);
   ssize_t data_size;
   int saddr_size,
-      sock_raw = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_IP));
+      sock_raw = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_IP|ETH_P_ARP));
 
   if (sock_raw == -1) {
     perror("Socket");
@@ -314,21 +345,11 @@ void print_raw(const raw_packet_t *raw) {
   printf("Number: %d\n", raw->num);
   printf("protocol: %s\n", getProtocol(raw->proto));
   printf("length: %d\n", raw->length);
-  /*printf("\nPACKET ETHERNET HEADER\n");
-  printf("%s\n", raw->eth->src_addr);
-  printf("%s\n", raw->eth->dest_addr);
-  printf("%u\n", raw->eth->proto);*/
 
-  /*printf("%d\n", raw->ip->version);
-  printf("%d\n", raw->ip->header_len);
-  printf("%d\n", raw->ip->service_type);
-  printf("%d\n", raw->ip->total_len);
-  printf("%d\n", raw->ip->id);
-  printf("%d\n", raw->ip->ttl);
-  printf("%d\n", raw->ip->proto);
-  printf("%d\n", raw->ip->checksum);*/
-  printf("src addr: %s\n", raw->ip->src_ip);
-  printf("dest addr: %s\n", raw->ip->dest_ip);
+  if (raw->ip != NULL) {
+    printf("src addr: %s\n", raw->ip->src_ip);
+    printf("dest addr: %s\n", raw->ip->dest_ip);
+  }
 
   if (raw->info->tcp != NULL) {
     printf("src p: %d\n", raw->info->tcp->src_port);
@@ -342,6 +363,11 @@ void print_raw(const raw_packet_t *raw) {
   if (raw->info->icmp != NULL) {
     printf("code: %d\n", raw->info->icmp->code);
   }
+  if (raw->info->arp != NULL) {
+    printf("src eth: (%s)\n", raw->eth->src_addr);
+    printf("dest eth: (%s)\n", raw->eth->dest_addr);
+    printf("hdrw f: 0x%X\n", raw->info->arp->hrdw_f);
+  }
 
   printf("%s\n", raw->dump->hexa);
   printf("%s\n", raw->dump->ascii);
@@ -351,7 +377,6 @@ void print_raw(const raw_packet_t *raw) {
 
 void export_pcapfile(const char *file) {
   //g_print("export_pcapfile() %s\n", file);
-  printf("\n\nEXPORT\n\n");
   FILE *f = fopen(file, "w");
   raw_packet_t *raw = app->raw;
   int pow = 16777216;
@@ -375,7 +400,6 @@ void export_pcapfile(const char *file) {
 
     while (pow > 0) {
       ziz[i++] = size / pow;
-      printf("size=%d pow=%d\n", size/pow, pow);
       size = size % pow;
       pow = pow / 256;
     }

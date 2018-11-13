@@ -12,6 +12,7 @@
 #include <netinet/udp.h>
 #include <netinet/tcp.h>
 #include <netinet/ip.h>
+#include <net/if_arp.h>
 #include <netinet/if_ether.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -81,10 +82,19 @@ typedef struct icmp_header_s {
   unsigned short checksum;
 } icmp_header_t;
 
+typedef struct arp_header_s {
+  unsigned short hrdw_f;
+  unsigned short proto_f;
+  unsigned char hrdw_len;
+  unsigned char proto_len;
+  unsigned short op;  
+} arp_header_t;
+
 typedef struct info_packet_s {
   tcp_header_t *tcp;
   udp_header_t *udp;
   icmp_header_t *icmp;
+  arp_header_t *arp;
 } info_packet_t;
 
 typedef struct data_dump_s {
