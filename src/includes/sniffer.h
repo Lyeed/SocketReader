@@ -110,6 +110,10 @@ void print_raw(const raw_packet_t *);
 char *getProtocol(const int);
 char *getInfo(const raw_packet_t *);
 char *getBigDetails(const int);
+char *getHexa(const int);
+char *getAscii(const int);
+char *getAddrSource(const int);
+char *getAddrDest(const int);
 void import_pcapfile(const char *);
 void export_pcapfile(const char *);
 

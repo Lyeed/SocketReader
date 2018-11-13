@@ -265,6 +265,21 @@ char *getBigDetails(const int num) {
   return num != 0 ? strdup("t pd") : strdup("ok ta mer");
 }
 
+char *getHexa(const int num) {
+  return strdup("fail");
+}
+
+char *getAscii(const int num) {
+  return strdup("fail");
+}
+
+char *getAddrSource(const int num) {
+  return strdup("fail");
+}
+
+char *getAddrDest(const int num) {
+  return strdup("fail");
+}
 
 char *getProtocol(const int proto) {
   char *protocol = NULL;
