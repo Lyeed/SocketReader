@@ -6,10 +6,10 @@ void *timer_start(void *data) {
   g_print("timer_start() thread\n");
   (void)data;
   app->timer = 0;
-  /*while (app->run) {
-    app->timer += 0.0001;
-    usleep(1);
-    }*/
+  while (app->run) {
+    app->timer += 0.001;
+    usleep(10);// TODO
+  }
   g_print("timer_start() exited\n");
   return NULL;
 }
@@ -62,7 +62,6 @@ void record_export(GtkWidget *widget, gpointer data) {
 
 void record_import(GtkWidget *widget, gpointer data) {
   g_print("record_import()\n");
-  gtk_widget_set_sensitive(widget, FALSE);
   GtkWidget *dialog = gtk_file_chooser_dialog_new("Open File",
                                       GTK_WINDOW(app->window),
                                       GTK_FILE_CHOOSER_ACTION_OPEN,
@@ -79,4 +78,5 @@ void record_import(GtkWidget *widget, gpointer data) {
   }
   gtk_widget_destroy(dialog);
   (void)data;
+  (void)widget;
 }
