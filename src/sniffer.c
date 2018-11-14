@@ -293,23 +293,283 @@ char *getInfo(const raw_packet_t *raw) {
 }
 
 char *getBigDetails(const int num) {
-  return num != 0 ? strdup("t pd") : strdup("ok ta mer");
+  raw_packet_t *raw = app->raw;
+  char *str = malloc(sizeof(char) * 4096);
+
+  while (raw != NULL) {
+    if (raw->num == num) {
+      switch(raw->proto) {
+      case 1: //TCP
+      case 5:
+	strcpy(str, "ETHERNET HEADER\n");
+	strcat(str, "Source: (");
+	strcat(str, raw->eth->src_addr);
+	strcat(str, ")\n");
+	strcat(str, "Destination: (");
+	strcat(str, raw->eth->dest_addr);
+	strcat(str, ")\n");
+	strcat(str, "Type: IPv4 (0x0800)\n");
+	strcat(str, "\n");
+
+	strcat(str, "IP HEADER\n");
+	strcat(str, "Version: ");
+	sprintf(str + strlen(str), "%d", raw->ip->version);
+	strcat(str, "\n");
+	strcat(str, "Header Length: ");
+	sprintf(str + strlen(str), "%d", raw->ip->header_len);
+	strcat(str, " bytes\n");
+	strcat(str, "Services Field: ");
+	sprintf(str + strlen(str), "0x%X", raw->ip->service_type);
+	strcat(str, "\n");
+	strcat(str, "Total Length: ");
+	sprintf(str + strlen(str), "%d", raw->ip->total_len);
+	strcat(str, "\n");
+	strcat(str, "Identification: ");
+	sprintf(str + strlen(str), "0x%X", raw->ip->id);
+	strcat(str, "\n");
+	strcat(str, "Time to live: ");
+	sprintf(str + strlen(str), "%d", raw->ip->ttl);
+	strcat(str, "\n");
+	strcat(str, "Protocol: ");
+	strcat(str, "TCP");
+	strcat(str, "\n");
+	strcat(str, "Header checksum: ");
+	sprintf(str + strlen(str), "0x%X", raw->ip->checksum);
+	strcat(str, "\n");
+	strcat(str, "Source: ");
+	strcat(str, raw->ip->src_ip);
+	strcat(str, "\n");
+	strcat(str, "Destination: ");
+	strcat(str, raw->ip->dest_ip);
+	strcat(str, "\n\n");
+
+	strcat(str, "TCP HEADER\n");
+	strcat(str, "Source Port: ");
+	sprintf(str + strlen(str), "%d", raw->info->tcp->src_port);
+	strcat(str, "\n");
+	strcat(str, "Destination Port: ");
+	sprintf(str + strlen(str), "%d", raw->info->tcp->dest_port);
+	strcat(str, "\n");
+	strcat(str, "Sequence number: ");
+	sprintf(str + strlen(str), "%ld", raw->info->tcp->seq);
+	strcat(str, "\n");
+	strcat(str, "Window size value: ");
+	sprintf(str + strlen(str), "%d", raw->info->tcp->window);
+	strcat(str, "\n");
+	strcat(str, "Checksum: ");
+	sprintf(str + strlen(str), "0x%X", raw->info->tcp->checksum);
+	strcat(str, "\n");
+	strcat(str, "Urgent pointer: ");
+	sprintf(str + strlen(str), "%d", raw->info->tcp->urg_ptr);
+	strcat(str, "\n");
+	break;
+
+      case 2: //UDP
+      case 6:
+	strcpy(str, "ETHERNET HEADER\n");
+	strcat(str, "Source: (");
+	strcat(str, raw->eth->src_addr);
+	strcat(str, ")\n");
+	strcat(str, "Destination: (");
+	strcat(str, raw->eth->dest_addr);
+	strcat(str, ")\n");
+	strcat(str, "Type: IPv4 (0x0800)\n");
+	strcat(str, "\n");
+
+	strcat(str, "IP HEADER\n");
+	strcat(str, "Version: ");
+	sprintf(str + strlen(str), "%d", raw->ip->version);
+	strcat(str, "\n");
+	strcat(str, "Header Length: ");
+	sprintf(str + strlen(str), "%d", raw->ip->header_len);
+	strcat(str, " bytes\n");
+	strcat(str, "Services Field: ");
+	sprintf(str + strlen(str), "0x%X", raw->ip->service_type);
+	strcat(str, "\n");
+	strcat(str, "Total Length: ");
+	sprintf(str + strlen(str), "%d", raw->ip->total_len);
+	strcat(str, "\n");
+	strcat(str, "Identification: ");
+	sprintf(str + strlen(str), "0x%X", raw->ip->id);
+	strcat(str, "\n");
+	strcat(str, "Time to live: ");
+	sprintf(str + strlen(str), "%d", raw->ip->ttl);
+	strcat(str, "\n");
+	strcat(str, "Protocol: ");
+	strcat(str, "TCP");
+	strcat(str, "\n");
+	strcat(str, "Header checksum: ");
+	sprintf(str + strlen(str), "0x%X", raw->ip->checksum);
+	strcat(str, "\n");
+	strcat(str, "Source: ");
+	strcat(str, raw->ip->src_ip);
+	strcat(str, "\n");
+	strcat(str, "Destination: ");
+	strcat(str, raw->ip->dest_ip);
+	strcat(str, "\n\n");
+
+	strcat(str, "UDP HEADER\n");
+	strcat(str, "Source Port: ");
+	sprintf(str + strlen(str), "%d", raw->info->udp->src_port);
+	strcat(str, "\n");
+	strcat(str, "Destination Port: ");
+	sprintf(str + strlen(str), "%d", raw->info->udp->dest_port);
+	strcat(str, "\n");
+	strcat(str, "Length: ");
+	sprintf(str + strlen(str), "%d", raw->info->udp->len);
+	strcat(str, "\n");
+	strcat(str, "Checksum: ");
+	sprintf(str + strlen(str), "0x%X", raw->info->udp->checksum);
+	strcat(str, "\n");
+	break;
+
+      case 3: //ICMP
+	strcpy(str, "ETHERNET HEADER\n");
+	strcat(str, "Source: (");
+	strcat(str, raw->eth->src_addr);
+	strcat(str, ")\n");
+	strcat(str, "Destination: (");
+	strcat(str, raw->eth->dest_addr);
+	strcat(str, ")\n");
+	strcat(str, "Type: IPv4 (0x0800)\n");
+	strcat(str, "\n");
+
+	strcat(str, "IP HEADER\n");
+	strcat(str, "Version: ");
+	sprintf(str + strlen(str), "%d", raw->ip->version);
+	strcat(str, "\n");
+	strcat(str, "Header Length: ");
+	sprintf(str + strlen(str), "%d", raw->ip->header_len);
+	strcat(str, " bytes\n");
+	strcat(str, "Services Field: ");
+	sprintf(str + strlen(str), "0x%X", raw->ip->service_type);
+	strcat(str, "\n");
+	strcat(str, "Total Length: ");
+	sprintf(str + strlen(str), "%d", raw->ip->total_len);
+	strcat(str, "\n");
+	strcat(str, "Identification: ");
+	sprintf(str + strlen(str), "0x%X", raw->ip->id);
+	strcat(str, "\n");
+	strcat(str, "Time to live: ");
+	sprintf(str + strlen(str), "%d", raw->ip->ttl);
+	strcat(str, "\n");
+	strcat(str, "Protocol: ");
+	strcat(str, "TCP");
+	strcat(str, "\n");
+	strcat(str, "Header checksum: ");
+	sprintf(str + strlen(str), "0x%X", raw->ip->checksum);
+	strcat(str, "\n");
+	strcat(str, "Source: ");
+	strcat(str, raw->ip->src_ip);
+	strcat(str, "\n");
+	strcat(str, "Destination: ");
+	strcat(str, raw->ip->dest_ip);
+	strcat(str, "\n\n");
+
+	strcat(str, "ICMP HEADER\n");
+	strcat(str, "Type: ");
+	sprintf(str + strlen(str), "%d", raw->info->icmp->type);
+	strcat(str, "\n");
+	strcat(str, "Code: ");
+	sprintf(str + strlen(str), "%d", raw->info->icmp->code);
+	strcat(str, "\n");
+	strcat(str, "Checksum: ");
+	sprintf(str + strlen(str), "0x%X", raw->info->icmp->checksum);
+	strcat(str, "\n");
+	break;
+
+      case 4: //ARP
+	strcpy(str, "ETHERNET HEADER\n");
+	strcat(str, "Source: (");
+	strcat(str, raw->eth->src_addr);
+	strcat(str, ")\n");
+	strcat(str, "Destination: (");
+	strcat(str, raw->eth->dest_addr);
+	strcat(str, ")\n");
+	strcat(str, "Type: ARP (0x0806)\n");
+	strcat(str, "\n");
+
+	strcat(str, "ARP HEADER\n");
+	strcat(str, "Hardware type: ");
+	sprintf(str + strlen(str), "0x%X", raw->info->arp->hrdw_f);
+	strcat(str, "\n");
+	strcat(str, "Protocol type: ");
+	sprintf(str + strlen(str), "0x%X", raw->info->arp->proto_f);
+	strcat(str, "\n");	
+	strcat(str, "Hardware size: ");
+	sprintf(str + strlen(str), "%d", raw->info->arp->hrdw_len);
+	strcat(str, "\n");
+	strcat(str, "Protocol size: ");
+	sprintf(str + strlen(str), "%d", raw->info->arp->proto_len);
+	strcat(str, "\n");
+	break;
+
+      case 0: //Unknonw
+	strcpy(str, "UNKNOWN PACKET\n");
+	strcat(str, "Source: (");
+	strcat(str, raw->eth->src_addr);
+	strcat(str, ")\n");
+	strcat(str, "Destination: (");
+	strcat(str, raw->eth->dest_addr);
+	strcat(str, ")\n");
+	strcat(str, "Length: ");
+	sprintf(str + strlen(str), "%d", raw->length);
+	strcat(str, "\n");
+      }
+      return str;
+    }
+    
+    raw = raw->next;
+  }
+  return strdup("packet not found\n");
 }
 
 char *getHexa(const int num) {
-  return strdup("fail");
+  raw_packet_t *raw = app->raw;
+
+  while (raw != NULL) {
+    if (raw->num == num) {
+      return strdup(raw->dump->hexa);
+    }
+    raw = raw->next;
+  }
+  return ("hexa not found\n");
 }
 
 char *getAscii(const int num) {
-  return strdup("fail");
+  raw_packet_t *raw = app->raw;
+
+  while (raw != NULL) {
+    if (raw->num == num) {
+      return strdup(raw->dump->ascii);
+    }
+    raw = raw->next;
+  }
+  return ("ascii not found\n");
 }
 
 char *getAddrSource(const int num) {
-  return strdup("fail");
+  raw_packet_t *raw = app->raw;
+
+  while (raw != NULL) {
+    if (raw->num == num) {
+      return raw->proto == ARP ? strdup(raw->eth->src_addr) : strdup(raw->ip->src_ip);
+    }
+    raw = raw->next;
+  }
+  return ("Source addr not found\n");
 }
 
 char *getAddrDest(const int num) {
-  return strdup("fail");
+  raw_packet_t *raw = app->raw;
+
+  while (raw != NULL) {
+    if (raw->num == num) {
+      return raw->proto == ARP ? strdup(raw->eth->dest_addr) : strdup(raw->ip->dest_ip);
+    }
+    raw = raw->next;
+  }
+  return ("Destination addr not found\n");
 }
 
 char *getProtocol(const int proto) {
@@ -393,19 +653,19 @@ void export_pcapfile(const char *file) {
   fprintf(f, "%c%c%c%c", 1, 0, 0, 0); //network
 
   while (raw != NULL) {
-    size = strlen(raw->dump->hexa)/2;
+    size = (int)strlen(raw->dump->hexa)/2;
 
     fprintf(f, "%c%c%c%c", 0, 0, 0, 0); //sec
     fprintf(f, "%c%c%c%c", 0, 0, 0, 0); //usec
 
     while (pow > 0) {
-      ziz[i++] = size / pow;
+      ziz[i++] = (unsigned char)(size / pow);
       size = size % pow;
       pow = pow / 256;
     }
     i = 0;
     pow = 16777216;
-    size = strlen(raw->dump->hexa);
+    size = (int)strlen(raw->dump->hexa);
     fprintf(f, "%c%c%c%c", ziz[3], ziz[2], ziz[1], ziz[0]);
     fprintf(f, "%c%c%c%c", ziz[3], ziz[2], ziz[1], ziz[0]);
 
@@ -413,13 +673,11 @@ void export_pcapfile(const char *file) {
       dup += (raw->dump->hexa[i] >= '0' && raw->dump->hexa[i] <= '9') ? (raw->dump->hexa[i] - '0') * 16 : (raw->dump->hexa[i] - 'A' + 10) * 16;
       dup += (raw->dump->hexa[i+1] >= '0' && raw->dump->hexa[i+1] <= '9') ? (raw->dump->hexa[i+1] - '0') : (raw->dump->hexa[i+1] - 'A' + 10);
       fprintf(f, "%c", dup);
-      //printf("%c%c -> %d\n", raw->dump->hexa[i],raw->dump->hexa[i+1], dup);
       i += 2;
       dup = 0;
     }
     i = 0;
     raw = raw->next;
-    printf("\n\n\n");
   }
 
 }
