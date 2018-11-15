@@ -122,8 +122,8 @@ char *getInfo(const raw_packet_t *);
 char *getBigDetails(const int);
 char *getHexa(const int);
 char *getAscii(const int);
-char *getAddrSource(const int);
-char *getAddrDest(const int);
+char *getAddrSource(const raw_packet_t *);
+char *getAddrDest(const raw_packet_t *);
 void import_pcapfile(const char *);
 void export_pcapfile(const char *);
 

@@ -217,7 +217,7 @@ static void fill_raw_packet(unsigned char *buffer, const ssize_t size) {
   }
   
   fill_data_dump(packet, buffer, size);
-  //fill_list(packet);
+  fill_list(packet);
   packet->next = NULL;
   print_raw(packet);
   if (tmp == NULL) {
@@ -236,7 +236,7 @@ void *sniffer(void *data) {
   unsigned char *buffer = (unsigned char *)malloc(65536);
   ssize_t data_size;
   int saddr_size,
-      sock_raw = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_IP|ETH_P_ARP));
+      sock_raw = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
 
   if (sock_raw == -1) {
     perror("Socket");
@@ -548,28 +548,12 @@ char *getAscii(const int num) {
   return ("ascii not found\n");
 }
 
-char *getAddrSource(const int num) {
-  raw_packet_t *raw = app->raw;
-
-  while (raw != NULL) {
-    if (raw->num == num) {
-      return raw->proto == ARP ? strdup(raw->eth->src_addr) : strdup(raw->ip->src_ip);
-    }
-    raw = raw->next;
-  }
-  return ("Source addr not found\n");
+char *getAddrSource(const raw_packet_t *raw) {
+  return raw->proto == ARP ? strdup(raw->eth->src_addr) : strdup(raw->ip->src_ip);
 }
 
-char *getAddrDest(const int num) {
-  raw_packet_t *raw = app->raw;
-
-  while (raw != NULL) {
-    if (raw->num == num) {
-      return raw->proto == ARP ? strdup(raw->eth->dest_addr) : strdup(raw->ip->dest_ip);
-    }
-    raw = raw->next;
-  }
-  return ("Destination addr not found\n");
+char *getAddrDest(const raw_packet_t *raw) {
+  return raw->proto == ARP ? strdup(raw->eth->dest_addr) : strdup(raw->ip->dest_ip);
 }
 
 char *getProtocol(const int proto) {
