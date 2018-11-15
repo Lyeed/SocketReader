@@ -191,17 +191,23 @@ static void fill_info_header(raw_packet_t *raw, unsigned char *buffer) {
 }
 
 static void fill_raw_packet(unsigned char *buffer, const ssize_t size) {
+  time_t recordTime;
   struct ethhdr *eth = (struct ethhdr *)buffer;
   if (ntohs(eth->h_proto) != ETH_P_IP && ntohs(eth->h_proto) != ETH_P_ARP) {
     return;
   }
 
   raw_packet_t *packet = malloc(sizeof(raw_packet_t));
+  if (!packet) {
+    g_printerr("packet malloc() failed\n");
+    exit(-1);
+  }
   raw_packet_t *tmp = app->raw;
 
+  time(&recordTime);
   app->packetsCount += 1;
   packet->num = app->packetsCount;
-  packet->time = 0;//app->timer;
+  packet->time = difftime(recordTime, app->start);
   packet->proto = Unknown;
   packet->length = (int)size;
   fill_ethernet_header(packet, buffer);

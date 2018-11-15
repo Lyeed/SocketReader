@@ -2,30 +2,18 @@
 #include "sniffer.h"
 #include "app.h"
 
-void *timer_start(void *data) {
-  g_print("timer_start() thread\n");
-  (void)data;
-  app->timer = 0;
-  while (app->run) {
-    app->timer += 0.001;
-    usleep(10);// TODO
-  }
-  g_print("timer_start() exited\n");
-  return NULL;
-}
-
 void record_start(GtkWidget *widget, gpointer data) {
   g_print("record_start()\n");
-  pthread_t sniffer_thread, timer_thread;
+  pthread_t sniffer_thread;
 
   app->run = 1;
+  time(&app->start);
   gtk_list_store_clear(app->store);
   gtk_widget_set_sensitive(widget, FALSE);
   gtk_widget_set_sensitive(app->buttons->buttonImport, FALSE);
   gtk_widget_set_sensitive(app->buttons->buttonStop, TRUE);
   gtk_widget_set_sensitive(app->buttons->buttonExport, TRUE);
   pthread_create(&sniffer_thread, NULL, sniffer, NULL);
-  pthread_create(&timer_thread, NULL, timer_start, NULL);
   (void)data;
 }
 

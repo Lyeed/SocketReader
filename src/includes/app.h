@@ -2,8 +2,9 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <pthread.h>
-#include "sniffer.h"
 #include <gtk/gtk.h>
+#include <time.h>
+#include "sniffer.h"
 
 #ifndef APP_H_
 #define APP_H_
@@ -24,9 +25,9 @@ typedef struct app {
   GtkListStore *store;
   GtkTreeIter iter;
   GtkTextBuffer *buffer;
+  time_t start;
   char *filters;
   int run;
-  double timer;
   buttons_t *buttons;
 } app_t;
 
