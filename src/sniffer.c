@@ -2,8 +2,6 @@
 #include "app.h"
 #include "views.h"
 
-int numb = 1;
-
 static void fill_info_arp(raw_packet_t *raw, unsigned char *buffer) {
   struct arphdr *arph = (struct arphdr *)(buffer + sizeof(struct ethhdr));
   info_packet_t *inf = malloc(sizeof(info_packet_t));
@@ -19,7 +17,7 @@ static void fill_info_arp(raw_packet_t *raw, unsigned char *buffer) {
   inf->udp = NULL;
   inf->icmp = NULL;
   inf->arp = arp;
-  
+
   raw->info = inf;
   raw->proto = ARP;
 }
@@ -64,7 +62,7 @@ static void fill_info_icmp(raw_packet_t *raw, unsigned char *buffer) {
   inf->udp = NULL;
   inf->icmp = icmp;
   inf->arp = NULL;
-  
+
   raw->info = inf;
   raw->proto = ICMP;
 }
@@ -133,7 +131,7 @@ static void fill_info_default(raw_packet_t *raw) {
 
 static void fill_data_dump(raw_packet_t *raw, unsigned char *buffer, const ssize_t size) {
   data_dump_t *dump = malloc(sizeof(data_dump_t));
-  int i = 0;  
+  int i = 0;
   char *hexa = malloc(sizeof(char) * (size_t)(size+1)*2);
   char *tmp = malloc(sizeof(char) * 5);
   char *ascii = malloc(sizeof(char) * (size_t)(size+1)*2);
@@ -201,7 +199,8 @@ static void fill_raw_packet(unsigned char *buffer, const ssize_t size) {
   raw_packet_t *packet = malloc(sizeof(raw_packet_t));
   raw_packet_t *tmp = app->raw;
 
-  packet->num = numb++;
+  app->packetsCount += 1;
+  packet->num = app->packetsCount;
   packet->time = 0;//app->timer;
   packet->proto = Unknown;
   packet->length = (int)size;
@@ -215,7 +214,7 @@ static void fill_raw_packet(unsigned char *buffer, const ssize_t size) {
     fill_ip_header(packet, buffer);
     fill_info_header(packet, buffer);
   }
-  
+
   fill_data_dump(packet, buffer, size);
   fill_list(packet);
   packet->next = NULL;
@@ -292,7 +291,7 @@ char *getInfo(const raw_packet_t *raw) {
   return info;
 }
 
-char *getBigDetails(const int num) {
+char *getBigDetails(const guint num) {
   raw_packet_t *raw = app->raw;
   char *str = malloc(sizeof(char) * 4096);
 
@@ -495,7 +494,7 @@ char *getBigDetails(const int num) {
 	strcat(str, "\n");
 	strcat(str, "Protocol type: ");
 	sprintf(str + strlen(str), "0x%X", raw->info->arp->proto_f);
-	strcat(str, "\n");	
+	strcat(str, "\n");
 	strcat(str, "Hardware size: ");
 	sprintf(str + strlen(str), "%d", raw->info->arp->hrdw_len);
 	strcat(str, "\n");
@@ -518,13 +517,13 @@ char *getBigDetails(const int num) {
       }
       return str;
     }
-    
+
     raw = raw->next;
   }
   return strdup("packet not found\n");
 }
 
-char *getHexa(const int num) {
+char *getHexa(const guint num) {
   raw_packet_t *raw = app->raw;
 
   while (raw != NULL) {
@@ -536,7 +535,7 @@ char *getHexa(const int num) {
   return ("hexa not found\n");
 }
 
-char *getAscii(const int num) {
+char *getAscii(const guint num) {
   raw_packet_t *raw = app->raw;
 
   while (raw != NULL) {
@@ -620,7 +619,7 @@ void print_raw(const raw_packet_t *raw) {
 }
 
 void export_pcapfile(const char *file) {
-  //g_print("export_pcapfile() %s\n", file);
+  g_print("export_pcapfile() %s\n", file);
   FILE *f = fopen(file, "w");
   raw_packet_t *raw = app->raw;
   int pow = 16777216;
@@ -663,11 +662,10 @@ void export_pcapfile(const char *file) {
     i = 0;
     raw = raw->next;
   }
-
 }
 
 void import_pcapfile(const char *file) {
-  //g_print("import_pcapfile() %s\n", file);
+  g_print("import_pcapfile() %s\n", file);
   app->raw = NULL;
   FILE *f = fopen(file, "r");
   int c,
@@ -681,14 +679,14 @@ void import_pcapfile(const char *file) {
     c = fgetc(f);
     i++;
   }
-  
+
   while (!feof(f)) {
     stop = i + 8;
     while (i < stop && !feof(f)) { // PACKET HEADER TIMER
       c = fgetc(f);
       i++;
     }
-    
+
     stop = i + 4;
     while (i < stop && !feof(f)) { // PACKET HEADER SIZE
       c = fgetc(f);
@@ -702,7 +700,7 @@ void import_pcapfile(const char *file) {
       c = fgetc(f);
       i++;
     }
-    
+
     stop = i + size;
     unsigned char *buffer = malloc((size_t)size);
     while (i < stop && !feof(f)) { // READ PACKET
@@ -718,6 +716,6 @@ void import_pcapfile(const char *file) {
     size = 0;
     pow = 1;
   }
-  
+
   fclose(f);
 }

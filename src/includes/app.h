@@ -2,8 +2,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <pthread.h>
-#include <gtk/gtk.h>
 #include "sniffer.h"
+#include <gtk/gtk.h>
 
 #ifndef APP_H_
 #define APP_H_
@@ -18,6 +18,7 @@ typedef struct buttons {
 
 typedef struct app {
   raw_packet_t *raw;
+  guint packetsCount;
   GtkWidget *window;
   GtkWidget *text;
   GtkListStore *store;

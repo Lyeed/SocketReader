@@ -106,6 +106,7 @@ void rowActivated(GtkTreeView *treeview, GtkTreePath *path, GtkTreeViewColumn *c
     g_print("rowActivated() id:%d\n", id);
     gtk_text_buffer_set_text(buffer, getBigDetails(id), -1);
   }
+  gtk_widget_show(app->text);
 }
 
 static GtkWidget *create_list_widget(void) {
@@ -153,4 +154,5 @@ void rawSocketView(void) {
   gtk_box_pack_start(GTK_BOX(box), create_text_widget(), FALSE, FALSE, 0);
 
   gtk_widget_show_all(app->window);
+  gtk_widget_hide(app->text);
 }

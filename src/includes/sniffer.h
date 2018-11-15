@@ -20,6 +20,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <pthread.h>
+#include <gtk/gtk.h>
 
 typedef enum protocol_e {
   TCP = 1,
@@ -87,7 +88,7 @@ typedef struct arp_header_s {
   unsigned short proto_f;
   unsigned char hrdw_len;
   unsigned char proto_len;
-  unsigned short op;  
+  unsigned short op;
 } arp_header_t;
 
 typedef struct info_packet_s {
@@ -103,7 +104,7 @@ typedef struct data_dump_s {
 } data_dump_t;
 
 typedef struct raw_packet_s {
-  int num;
+  guint num;
   double time;
   int length;
   protocol_t proto;
@@ -119,9 +120,9 @@ void *sniffer(void *);
 void print_raw(const raw_packet_t *);
 char *getProtocol(const int);
 char *getInfo(const raw_packet_t *);
-char *getBigDetails(const int);
-char *getHexa(const int);
-char *getAscii(const int);
+char *getBigDetails(const guint);
+char *getHexa(const guint);
+char *getAscii(const guint);
 char *getAddrSource(const raw_packet_t *);
 char *getAddrDest(const raw_packet_t *);
 void import_pcapfile(const char *);
