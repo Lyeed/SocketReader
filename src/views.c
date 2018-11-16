@@ -99,14 +99,16 @@ void rowActivated(GtkTreeView *treeview, GtkTreePath *path, GtkTreeViewColumn *c
 
   model = gtk_tree_view_get_model(treeview);
   if (gtk_tree_model_get_iter(model, &iter, path)) {
-    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(app->text));
     guint id;
-
     gtk_tree_model_get(model, &iter, COLUMN_NUMBER, &id, -1);
     g_print("rowActivated() id:%d\n", id);
-    gtk_text_buffer_set_text(buffer, getBigDetails(id), -1);
+    const raw_packet_t *packet = getPacket(id);
+    if (packet == NULL) {
+        g_printerr("Cannot find packet with id %d\n", id);
+    } else {
+        packetDialogOpen(packet);
+    }
   }
-  gtk_widget_show(app->text);
 }
 
 static GtkWidget *create_list_widget(void) {

@@ -120,12 +120,13 @@ void *sniffer(void *);
 void print_raw(const raw_packet_t *);
 char *getProtocol(const int);
 char *getInfo(const raw_packet_t *);
-char *getBigDetails(const guint);
-char *getHexa(const guint);
-char *getAscii(const guint);
+char *getBigDetails(const raw_packet_t *);
+char *getHexa(const raw_packet_t *);
+char *getAscii(const raw_packet_t *);
 char *getAddrSource(const raw_packet_t *);
 char *getAddrDest(const raw_packet_t *);
 void import_pcapfile(const char *);
 void export_pcapfile(const char *);
+raw_packet_t *getPacket(const guint);
 
 #endif
