@@ -49,6 +49,7 @@ void record_export(GtkWidget *widget, gpointer data) {
 
 void record_import(GtkWidget *widget, gpointer data) {
   g_print("record_import()\n");
+  gtk_list_store_clear(app->store);
   GtkWidget *dialog = gtk_file_chooser_dialog_new("Open File",
                                       GTK_WINDOW(app->window),
                                       GTK_FILE_CHOOSER_ACTION_OPEN,

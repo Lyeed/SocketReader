@@ -190,7 +190,41 @@ static void fill_info_header(raw_packet_t *raw, unsigned char *buffer) {
   }
 }
 
-static void fill_raw_packet(unsigned char *buffer, const ssize_t size) {
+static int what_filter(void) {
+  if (strncmp(app->filters, "host ", 5) == 0)
+    return 1;
+  else if (strncmp(app->filters, "port ", 5) == 0)
+    return 2;
+  else if (strncmp(app->filters, "proto ", 6) == 0)
+    return 3;
+  else
+    return 0;
+}
+
+static int can_add(raw_packet_t *raw) {
+  switch (what_filter()) {
+  case 1:
+    if (raw->ip != NULL)
+      return (strcmp(raw->ip->dest_ip, (app->filters + 5)) != 0 && strcmp(raw->ip->src_ip, (app->filters + 5)) != 0) ? 0 : 1;
+    break;
+  case 2:
+    if (raw->info->tcp != NULL) {
+      return (atoi(app->filters + 5) != raw->info->tcp->src_port && atoi(app->filters + 5) != raw->info->tcp->dest_port) ? 0 : 1;
+    }
+    else if (raw->info->udp != NULL) { 
+      return (atoi(app->filters + 5) != raw->info->udp->src_port && atoi(app->filters + 5) != raw->info->udp->dest_port) ? 0 : 1;
+    }
+  case 3:
+    return (strcmp(getProtocol(raw->proto), (app->filters + 6)) == 0) ? 1 : 0;
+    break;
+  case 0:
+    return 0;
+    break;
+  }
+  return 0;
+}
+
+static void fill_raw_packet(unsigned char *buffer, const ssize_t size, const int timerEnabled) {
   time_t recordTime;
   struct ethhdr *eth = (struct ethhdr *)buffer;
   if (ntohs(eth->h_proto) != ETH_P_IP && ntohs(eth->h_proto) != ETH_P_ARP) {
@@ -203,11 +237,11 @@ static void fill_raw_packet(unsigned char *buffer, const ssize_t size) {
     exit(-1);
   }
   raw_packet_t *tmp = app->raw;
-
+  
   time(&recordTime);
   app->packetsCount += 1;
   packet->num = app->packetsCount;
-  packet->time = difftime(recordTime, app->start);
+  packet->time = (timerEnabled == 1) ? difftime(recordTime, app->start) : 0;
   packet->proto = Unknown;
   packet->length = (int)size;
   fill_ethernet_header(packet, buffer);
@@ -220,8 +254,13 @@ static void fill_raw_packet(unsigned char *buffer, const ssize_t size) {
     fill_ip_header(packet, buffer);
     fill_info_header(packet, buffer);
   }
-
   fill_data_dump(packet, buffer, size);
+  if (can_add(packet) == 0) {
+    app->packetsCount--;
+    return;
+  }
+  
+  
   fill_list(packet);
   packet->next = NULL;
   print_raw(packet);
@@ -249,6 +288,7 @@ void *sniffer(void *data) {
   }
 
   g_print("sniffer()\n");
+  app->packetsCount = 0;
   while (app->run) {
     saddr_size = sizeof(saddr);
     data_size = recvfrom(sock_raw, buffer, 65536, 0, &saddr, (socklen_t*)&saddr_size);
@@ -256,7 +296,7 @@ void *sniffer(void *data) {
       if (data_size < 0) {
         g_printerr("recvfrom() failed\n");
       } else {
-        fill_raw_packet(buffer, data_size);
+        fill_raw_packet(buffer, data_size, 1);
       }
     }
   }
@@ -295,6 +335,207 @@ char *getInfo(const raw_packet_t *raw) {
     break;
   }
   return info;
+}
+
+char *getHexa(const guint num) {
+  raw_packet_t *raw = app->raw;
+
+  while (raw != NULL) {
+    if (raw->num == num) {
+      return strdup(raw->dump->hexa);
+    }
+    raw = raw->next;
+  }
+  return ("hexa not found\n");
+}
+
+char *getAscii(const guint num) {
+  raw_packet_t *raw = app->raw;
+
+  while (raw != NULL) {
+    if (raw->num == num) {
+      return strdup(raw->dump->ascii);
+    }
+    raw = raw->next;
+  }
+  return ("ascii not found\n");
+}
+
+char *getAddrSource(const raw_packet_t *raw) {
+  return raw->proto == ARP ? strdup(raw->eth->src_addr) : strdup(raw->ip->src_ip);
+}
+
+char *getAddrDest(const raw_packet_t *raw) {
+  return raw->proto == ARP ? strdup(raw->eth->dest_addr) : strdup(raw->ip->dest_ip);
+}
+
+char *getProtocol(const int proto) {
+  char *protocol = NULL;
+  switch (proto) {
+    case 0:
+      protocol = strdup("Unknown");
+      break;
+    case 1:
+      protocol = strdup("TCP");
+      break;
+    case 2:
+      protocol = strdup("UDP");
+      break;
+    case 3:
+      protocol = strdup("ICMP");
+      break;
+    case 4:
+      protocol = strdup("ARP");
+      break;
+    case 5:
+      protocol = strdup("HTTP");
+      break;
+    case 6:
+      protocol = strdup("DNS");
+      break;
+  };
+  return protocol;
+}
+
+void print_raw(const raw_packet_t *raw) {
+  printf("##############################\n");
+  printf("Number: %d\n", raw->num);
+  printf("protocol: %s\n", getProtocol(raw->proto));
+  printf("length: %d\n", raw->length);
+
+  if (raw->ip != NULL) {
+    printf("src addr: %s\n", raw->ip->src_ip);
+    printf("dest addr: %s\n", raw->ip->dest_ip);
+  }
+
+  if (raw->info->tcp != NULL) {
+    printf("src p: %d\n", raw->info->tcp->src_port);
+    printf("dest p: %d\n", raw->info->tcp->dest_port);
+    printf("window: %d\n", raw->info->tcp->window);
+  }
+  if (raw->info->udp != NULL) {
+    printf("src p: %d\n", raw->info->udp->src_port);
+    printf("dest p: %d\n", raw->info->udp->dest_port);
+  }
+  if (raw->info->icmp != NULL) {
+    printf("code: %d\n", raw->info->icmp->code);
+  }
+  if (raw->info->arp != NULL) {
+    printf("src eth: (%s)\n", raw->eth->src_addr);
+    printf("dest eth: (%s)\n", raw->eth->dest_addr);
+    printf("hdrw f: 0x%X\n", raw->info->arp->hrdw_f);
+  }
+
+  printf("%s\n", raw->dump->hexa);
+  printf("%s\n", raw->dump->ascii);
+  printf("##############################\n");
+  printf("\n");
+}
+
+void export_pcapfile(const char *file) {
+  g_print("export_pcapfile() %s\n", file);
+  FILE *f = fopen(file, "w");
+  raw_packet_t *raw = app->raw;
+  int pow = 16777216;
+  int size = 0;
+  unsigned char ziz[4];
+  unsigned char dup = 0;
+  int i = 0;
+  int tmp = 0;
+
+  fprintf(f, "%c%c%c%c", 212, 195, 178, 161); //magic number
+  fprintf(f, "%c%c%c%c", 2, 0, 4, 0); // version
+  fprintf(f, "%c%c%c%c", 0, 0, 0, 0); //zone
+  fprintf(f, "%c%c%c%c", 0, 0, 0, 0); //sig
+  fprintf(f, "%c%c%c%c", 255, 255, 0, 0); //snap
+  fprintf(f, "%c%c%c%c", 1, 0, 0, 0); //network
+
+  while (raw != NULL) {
+    size = (int)strlen(raw->dump->hexa)/2;
+
+    fprintf(f, "%c%c%c%c", 0, 0, 0, 0); //sec
+    fprintf(f, "%c%c%c%c", 0, 0, 0, 0); //usec
+
+    while (pow > 0) {
+      ziz[i++] = (unsigned char)(size / pow);
+      size = size % pow;
+      pow = pow / 256;
+    }
+    i = 0;
+    pow = 16777216;
+    size = (int)strlen(raw->dump->hexa);
+    fprintf(f, "%c%c%c%c", ziz[3], ziz[2], ziz[1], ziz[0]);
+    fprintf(f, "%c%c%c%c", ziz[3], ziz[2], ziz[1], ziz[0]);
+
+    while (i < size) {
+      tmp += (raw->dump->hexa[i] >= '0' && raw->dump->hexa[i] <= '9') ? (raw->dump->hexa[i] - '0') * 16 : (raw->dump->hexa[i] - 'A' + 10) * 16;
+      tmp += (raw->dump->hexa[i+1] >= '0' && raw->dump->hexa[i+1] <= '9') ? (raw->dump->hexa[i+1] - '0') : (raw->dump->hexa[i+1] - 'A' + 10);
+      dup = (unsigned char)tmp;
+      fprintf(f, "%c", dup);
+      i += 2;
+      dup = 0;
+      tmp = 0;
+    }
+    i = 0;
+    raw = raw->next;
+  }
+}
+
+void import_pcapfile(const char *file) {
+  g_print("import_pcapfile() %s\n", file);
+  app->raw = NULL;
+  app->packetsCount = 0;
+  FILE *f = fopen(file, "r");
+  int c,
+    i = 0,
+    j = 0,
+    stop = 0,
+    pow = 1,
+    size = 0;
+
+  while (i < 24 && !feof(f)) { // GLOBAL HEADER
+    c = fgetc(f);
+    i++;
+  }
+
+  while (!feof(f)) {
+    stop = i + 8;
+    while (i < stop && !feof(f)) { // PACKET HEADER TIMER
+      c = fgetc(f);
+      i++;
+    }
+
+    stop = i + 4;
+    while (i < stop && !feof(f)) { // PACKET HEADER SIZE
+      c = fgetc(f);
+      size += c * pow;
+      if (i+1 != stop)
+	pow = pow * 256;
+      i++;
+    }
+    stop = i + 4;
+    while (i < stop && !feof(f)) { // PACKET HEADER SIZE 2
+      c = fgetc(f);
+      i++;
+    }
+
+    stop = i + size;
+    unsigned char *buffer = malloc((size_t)size);
+    while (i < stop && !feof(f)) { // READ PACKET
+      c = fgetc(f);
+       buffer[j++] = (unsigned char)c;
+       i++;
+     }
+    if (c != -1) {
+      fill_raw_packet(buffer, size, 0);
+    }
+    buffer = NULL;
+    j = 0;
+    size = 0;
+    pow = 1;
+  }
+
+  fclose(f);
 }
 
 char *getBigDetails(const guint num) {
@@ -527,201 +768,4 @@ char *getBigDetails(const guint num) {
     raw = raw->next;
   }
   return strdup("packet not found\n");
-}
-
-char *getHexa(const guint num) {
-  raw_packet_t *raw = app->raw;
-
-  while (raw != NULL) {
-    if (raw->num == num) {
-      return strdup(raw->dump->hexa);
-    }
-    raw = raw->next;
-  }
-  return ("hexa not found\n");
-}
-
-char *getAscii(const guint num) {
-  raw_packet_t *raw = app->raw;
-
-  while (raw != NULL) {
-    if (raw->num == num) {
-      return strdup(raw->dump->ascii);
-    }
-    raw = raw->next;
-  }
-  return ("ascii not found\n");
-}
-
-char *getAddrSource(const raw_packet_t *raw) {
-  return raw->proto == ARP ? strdup(raw->eth->src_addr) : strdup(raw->ip->src_ip);
-}
-
-char *getAddrDest(const raw_packet_t *raw) {
-  return raw->proto == ARP ? strdup(raw->eth->dest_addr) : strdup(raw->ip->dest_ip);
-}
-
-char *getProtocol(const int proto) {
-  char *protocol = NULL;
-  switch (proto) {
-    case 0:
-      protocol = strdup("Unknown");
-      break;
-    case 1:
-      protocol = strdup("TCP");
-      break;
-    case 2:
-      protocol = strdup("UDP");
-      break;
-    case 3:
-      protocol = strdup("ICMP");
-      break;
-    case 4:
-      protocol = strdup("ARP");
-      break;
-    case 5:
-      protocol = strdup("HTTP");
-      break;
-    case 6:
-      protocol = strdup("DNS");
-      break;
-  };
-  return protocol;
-}
-
-void print_raw(const raw_packet_t *raw) {
-  printf("##############################\n");
-  printf("Number: %d\n", raw->num);
-  printf("protocol: %s\n", getProtocol(raw->proto));
-  printf("length: %d\n", raw->length);
-
-  if (raw->ip != NULL) {
-    printf("src addr: %s\n", raw->ip->src_ip);
-    printf("dest addr: %s\n", raw->ip->dest_ip);
-  }
-
-  if (raw->info->tcp != NULL) {
-    printf("src p: %d\n", raw->info->tcp->src_port);
-    printf("dest p: %d\n", raw->info->tcp->dest_port);
-    printf("window: %d\n", raw->info->tcp->window);
-  }
-  if (raw->info->udp != NULL) {
-    printf("src p: %d\n", raw->info->udp->src_port);
-    printf("dest p: %d\n", raw->info->udp->dest_port);
-  }
-  if (raw->info->icmp != NULL) {
-    printf("code: %d\n", raw->info->icmp->code);
-  }
-  if (raw->info->arp != NULL) {
-    printf("src eth: (%s)\n", raw->eth->src_addr);
-    printf("dest eth: (%s)\n", raw->eth->dest_addr);
-    printf("hdrw f: 0x%X\n", raw->info->arp->hrdw_f);
-  }
-
-  printf("%s\n", raw->dump->hexa);
-  printf("%s\n", raw->dump->ascii);
-  printf("##############################\n");
-  printf("\n");
-}
-
-void export_pcapfile(const char *file) {
-  g_print("export_pcapfile() %s\n", file);
-  FILE *f = fopen(file, "w");
-  raw_packet_t *raw = app->raw;
-  int pow = 16777216;
-  int size = 0;
-  unsigned char ziz[4];
-  unsigned char dup = 0;
-  int i = 0;
-
-  fprintf(f, "%c%c%c%c", 212, 195, 178, 161); //magic number
-  fprintf(f, "%c%c%c%c", 2, 0, 4, 0); // version
-  fprintf(f, "%c%c%c%c", 0, 0, 0, 0); //zone
-  fprintf(f, "%c%c%c%c", 0, 0, 0, 0); //sig
-  fprintf(f, "%c%c%c%c", 255, 255, 0, 0); //snap
-  fprintf(f, "%c%c%c%c", 1, 0, 0, 0); //network
-
-  while (raw != NULL) {
-    size = (int)strlen(raw->dump->hexa)/2;
-
-    fprintf(f, "%c%c%c%c", 0, 0, 0, 0); //sec
-    fprintf(f, "%c%c%c%c", 0, 0, 0, 0); //usec
-
-    while (pow > 0) {
-      ziz[i++] = (unsigned char)(size / pow);
-      size = size % pow;
-      pow = pow / 256;
-    }
-    i = 0;
-    pow = 16777216;
-    size = (int)strlen(raw->dump->hexa);
-    fprintf(f, "%c%c%c%c", ziz[3], ziz[2], ziz[1], ziz[0]);
-    fprintf(f, "%c%c%c%c", ziz[3], ziz[2], ziz[1], ziz[0]);
-
-    while (i < size) {
-      dup += (raw->dump->hexa[i] >= '0' && raw->dump->hexa[i] <= '9') ? (raw->dump->hexa[i] - '0') * 16 : (raw->dump->hexa[i] - 'A' + 10) * 16;
-      dup += (raw->dump->hexa[i+1] >= '0' && raw->dump->hexa[i+1] <= '9') ? (raw->dump->hexa[i+1] - '0') : (raw->dump->hexa[i+1] - 'A' + 10);
-      fprintf(f, "%c", dup);
-      i += 2;
-      dup = 0;
-    }
-    i = 0;
-    raw = raw->next;
-  }
-}
-
-void import_pcapfile(const char *file) {
-  g_print("import_pcapfile() %s\n", file);
-  app->raw = NULL;
-  FILE *f = fopen(file, "r");
-  int c,
-    i = 0,
-    j = 0,
-    stop = 0,
-    pow = 1,
-    size = 0;
-
-  while (i < 24 && !feof(f)) { // GLOBAL HEADER
-    c = fgetc(f);
-    i++;
-  }
-
-  while (!feof(f)) {
-    stop = i + 8;
-    while (i < stop && !feof(f)) { // PACKET HEADER TIMER
-      c = fgetc(f);
-      i++;
-    }
-
-    stop = i + 4;
-    while (i < stop && !feof(f)) { // PACKET HEADER SIZE
-      c = fgetc(f);
-      size += c * pow;
-      if (i+1 != stop)
-	pow = pow * 256;
-      i++;
-    }
-    stop = i + 4;
-    while (i < stop && !feof(f)) { // PACKET HEADER SIZE 2
-      c = fgetc(f);
-      i++;
-    }
-
-    stop = i + size;
-    unsigned char *buffer = malloc((size_t)size);
-    while (i < stop && !feof(f)) { // READ PACKET
-      c = fgetc(f);
-       buffer[j++] = (unsigned char)c;
-       i++;
-     }
-    if (c != -1) {
-      fill_raw_packet(buffer, size);
-    }
-    buffer = NULL;
-    j = 0;
-    size = 0;
-    pow = 1;
-  }
-
-  fclose(f);
 }

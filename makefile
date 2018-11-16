@@ -30,10 +30,8 @@ OBJS=				$(SRCS:.c=.o)
 
 NAME= 			network-analysis
 
-all: 				$(NAME)
-
-$(NAME): 		$(OBJS)
-						$(COMPILER) $(CFLAGS) $(SRCS) -o $(NAME) $(GTK_LDFLAGS)
+all: 		$(OBJS)
+						$(COMPILER) $(CFLAGS) $(OBJS) -o $(NAME) $(GTK_LDFLAGS)
 
 clean:
 						$(RM) $(OBJS)
