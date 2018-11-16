@@ -155,7 +155,7 @@ static void fill_data_dump(raw_packet_t *raw, unsigned char *buffer, const ssize
   free(tmp);
 
   for (i = 0; i < size; i++) {
-    if (buffer[i] >= 32 && buffer[i] <= 128)
+    if (buffer[i] >= 33 && buffer[i] <= 126)
       ascii[i] = (char)buffer[i];
     else
       ascii[i] = '.';
@@ -264,7 +264,7 @@ static void fill_raw_packet(unsigned char *buffer, const ssize_t size, const int
     fill_info_header(packet, buffer);
   }
   fill_data_dump(packet, buffer, size);
-  if (can_add(packet) == 0) {
+  if (can_add(packet) == 0 && strlen(app->filters) != 0) {
     app->packetsCount--;
     return;
   }
